@@ -1493,66 +1493,6 @@
                 distributionBarChart && distributionBarChart.resize();
             });
         }
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: '人数',
-                        data: data,
-                        backgroundColor: [
-                            'rgba(102, 126, 234, 0.8)',
-                            'rgba(244, 114, 182, 0.8)',
-                            'rgba(52, 211, 153, 0.8)',
-                            'rgba(251, 146, 60, 0.8)',
-                            'rgba(139, 92, 246, 0.8)'
-                        ],
-                        borderColor: [
-                            'rgb(102, 126, 234)',
-                            'rgb(244, 114, 182)',
-                            'rgb(52, 211, 153)',
-                            'rgb(251, 146, 60)',
-                            'rgb(139, 92, 246)'
-                        ],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const value = context.parsed.y || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                    return `人数: ${value} (${percentage}%)`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            },
-                            title: {
-                                display: true,
-                                text: '人数'
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45
-                            }
-                        }
-                    }
-                }
-            });
-        }
 
         // ===== 时间图表展示功能 =====
         function displayTimeCharts(stats) {
