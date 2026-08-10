@@ -51,12 +51,12 @@ public class PersonDataController {
     /**
      * 根据人员ID查询
      *
-     * @param personIc 人员ID
+     * @param personId 人员ID
      * @return 数据详情
      */
-    @GetMapping("/{personIc}")
-    public Result<PersonData> getByPersonIc(@PathVariable Long personIc) {
-        PersonData data = personDataService.getByPersonIc(personIc);
+    @GetMapping("/{personId}")
+    public Result<PersonData> getByPersonId(@PathVariable Long personId) {
+        PersonData data = personDataService.getByPersonId(personId);
         if (data == null) {
             return Result.error("数据不存在");
         }

@@ -16,7 +16,7 @@ public class PersonDataQuery extends PageQuery {
     /**
      * 人员ID
      */
-    private Long personIc;
+    private Long personId;
 
     /**
      * 性别（0-女，1-男）

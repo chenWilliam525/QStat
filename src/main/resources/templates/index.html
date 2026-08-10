@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QStat - 数据查询系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1000px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .query-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .query-tab {
+            padding: 15px 30px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .query-tab:hover {
+            color: #667eea;
+        }
+
+        .query-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .query-form {
+            display: none;
+        }
+
+        .query-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-control::placeholder {
+            color: #999;
+        }
+
+        select.form-control {
+            cursor: pointer;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .radio-item input[type="radio"] {
+            cursor: pointer;
+        }
+
+        .radio-item label {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        /* 年龄段区域样式 */
+        .age-ranges-section {
+            margin-bottom: 20px;
+        }
+
+        .age-range-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .age-range-item .range-number {
+            font-weight: bold;
+            color: #667eea;
+            min-width: 30px;
+        }
+
+        .age-range-item .form-control {
+            margin: 0;
+        }
+
+        .age-range-item .remove-btn {
+            padding: 8px 12px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .age-range-item .remove-btn:hover {
+            background: #ff3344;
+        }
+
+        .add-range-btn {
+            width: 100%;
+            padding: 12px;
+            background: #e0e0e0;
+            border: 2px dashed #999;
+            border-radius: 8px;
+            color: #666;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .add-range-btn:hover {
+            background: #d0d0d0;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .results-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .results-count {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .results-count strong {
+            color: #667eea;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            color: #333;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .page-btn {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 QStat 数据查询系统</h1>
+            <p>支持按出生年份、飞行里程、飞行时间多维度查询</p>
+        </div>
+
+        <!-- 查询标签页 -->
+        <div class="query-tabs">
+            <button class="query-tab active" data-tab="birth-year">按出生年份查询</button>
+            <button class="query-tab" data-tab="mileage">按飞行里程查询</button>
+            <button class="query-tab" data-tab="travel-time">按飞行时间查询</button>
+        </div>
+
+        <!-- 按出生年份查询表单 -->
+        <form id="birthYearForm" class="query-form active">
+            <div class="form-group">
+                <label>年龄段设置（可添加多个年龄段，支持重叠）</label>
+                <div id="ageRangesContainer">
+                    <!-- 年龄段列表将在这里动态生成 -->
+                </div>
+                <button type="button" class="add-range-btn" id="addRangeBtn">+ 添加年龄段</button>
+            </div>
+
+            <div class="form-group">
+                <label>性别（可选）</label>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" name="gender" value="" checked id="by-all">
+                        <label for="by-all">全部</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" name="gender" value="1" id="by-male">
+                        <label for="by-male">男</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" name="gender" value="0" id="by-female">
+                        <label for="by-female">女</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">查询数据</button>
+                <button type="reset" class="btn btn-secondary">重置条件</button>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+        </form>
+
+        <!-- 按飞行里程查询表单 -->
+        <form id="mileageForm" class="query-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>最小飞行里程（公里）</label>
+                    <input type="number" name="minMileage" class="form-control" placeholder="例如：1000" min="0">
+                </div>
+                <div class="form-group">
+                    <label>最大飞行里程（公里）</label>
+                    <input type="number" name="maxMileage" class="form-control" placeholder="例如：100000" min="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>性别（可选）</label>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" name="gender" value="" checked id="ml-all">
+                        <label for="ml-all">全部</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" name="gender" value="1" id="ml-male">
+                        <label for="ml-male">男</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" name="gender" value="0" id="ml-female">
+                        <label for="ml-female">女</label>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">查询数据</button>
+                <button type="reset" class="btn btn-secondary">重置条件</button>
+            </div>
+        </form>
+
+        <!-- 按飞行时间查询表单 -->
+        <form id="travelTimeForm" class="query-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>最小飞行时间（小时）</label>
+                    <input type="number" name="minTravelTime" class="form-control" placeholder="例如：1" min="0">
+                </div>
+                <div class="form-group">
+                    <label>最大飞行时间（小时）</label>
+                    <input type="number" name="maxTravelTime" class="form-control" placeholder="例如：100" min="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>性别（可选）</label>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" name="gender" value="" checked id="tt-all">
+                        <label for="tt-all">全部</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" name="gender" value="1" id="tt-male">
+                        <label for="tt-male">男</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" name="gender" value="0" id="tt-female">
+                        <label for="tt-female">女</label>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">查询数据</button>
+                <button type="reset" class="btn btn-secondary">重置条件</button>
+            </div>
+        </form>
+
+        <!-- 查询结果区域 -->
+        <div id="resultsSection" class="results-section">
+            <div class="results-header">
+                <h3>查询结果</h3>
+                <span class="results-count">共找到 <strong id="resultCount">0</strong> 条记录</span>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>人员ID</th>
+                            <th>性别</th>
+                            <th>出生年份</th>
+                            <th>年龄</th>
+                            <th>总里程(公里)</th>
+                            <th>总时间(小时)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                        <!-- 查询结果将在这里显示 -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination" id="pagination">
+                <!-- 分页按钮将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        // API 基础路径
+        const API_BASE = '/api';
+
+        // 当前活跃标签页
+        let activeTab = 'birth-year';
+
+        // 分页参数
+        let currentPage = 1;
+        let pageSize = 10;
+        let totalPages = 0;
+        let totalCount = 0;
+
+        // 年龄段计数器
+        let ageRangeCounter = 0;
+
+        // 当前查询条件（缓存）
+        let currentQuery = null;
+
+        // ===== 标签页切换功能 =====
+        document.querySelectorAll('.query-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // 切换标签页样式
+                document.querySelectorAll('.query-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                // 切换表单显示
+                const tabName = this.dataset.tab;
+                document.querySelectorAll('.query-form').forEach(form => form.classList.remove('active'));
+                document.getElementById(tabName + 'Form').classList.add('active');
+
+                // 隐藏结果区域
+                hideResults();
+
+                // 更新当前标签
+                activeTab = tabName;
+            });
+        });
+
+        // ===== 年龄段管理功能 =====
+        const ageRangesContainer = document.getElementById('ageRangesContainer');
+        const addRangeBtn = document.getElementById('addRangeBtn');
+
+        // 初始化：添加两个默认年龄段
+        addAgeRange(10, 20);
+        addAgeRange(18, 25);
+
+        // 添加年龄段
+        addRangeBtn.addEventListener('click', () => {
+            addAgeRange();
+        });
+
+        function addAgeRange(minAge = '', maxAge = '') {
+            ageRangeCounter++;
+            const rangeHtml = `
+                <div class="age-range-item" data-range-id="${ageRangeCounter}">
+                    <span class="range-number">${ageRangeCounter}.</span>
+                    <input type="number" class="form-control min-age" placeholder="最小年龄"
+                           value="${minAge}" min="0" max="120" style="flex: 1;">
+                    <span>-</span>
+                    <input type="number" class="form-control max-age" placeholder="最大年龄"
+                           value="${maxAge}" min="0" max="120" style="flex: 1;">
+                    <span>岁</span>
+                    <button type="button" class="remove-btn" onclick="removeAgeRange(${ageRangeCounter})">×</button>
+                </div>
+            `;
+            ageRangesContainer.insertAdjacentHTML('beforeend', rangeHtml);
+        }
+
+        // 删除年龄段
+        window.removeAgeRange = function(rangeId) {
+            const rangeItem = document.querySelector(`[data-range-id="${rangeId}"]`);
+            if (rangeItem) {
+                rangeItem.remove();
+                // 重新编号
+                updateRangeNumbers();
+            }
+        };
+
+        // 更新年龄段编号
+        function updateRangeNumbers() {
+            const ranges = ageRangesContainer.querySelectorAll('.age-range-item');
+            ranges.forEach((range, index) => {
+                range.querySelector('.range-number').textContent = (index + 1) + '.';
+            });
+        }
+
+        // ===== 查询功能 =====
+        document.getElementById('birthYearForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // 收集查询条件
+            const query = collectBirthYearQuery();
+
+            // 验证
+            const validation = validateBirthYearQuery(query);
+            if (!validation.valid) {
+                showError(validation.message);
+                return;
+            }
+
+            hideError();
+
+            // 执行查询
+            currentQuery = query;
+            currentPage = 1;
+            await executeBirthYearQuery();
+        });
+
+        // 收集出生年份查询条件
+        function collectBirthYearQuery() {
+            const ageRanges = [];
+            const rangeItems = ageRangesContainer.querySelectorAll('.age-range-item');
+
+            rangeItems.forEach(item => {
+                const minAge = item.querySelector('.min-age').value;
+                const maxAge = item.querySelector('.max-age').value;
+
+                if (minAge !== '' && maxAge !== '') {
+                    ageRanges.push({
+                        minAge: parseInt(minAge),
+                        maxAge: parseInt(maxAge)
+                    });
+                }
+            });
+
+            const genderInput = document.querySelector('input[name="gender"]:checked');
+            const gender = genderInput && genderInput.value !== '' ? parseInt(genderInput.value) : null;
+
+            return {
+                ageRanges: ageRanges,
+                gender: gender,
+                current: currentPage,
+                size: pageSize
+            };
+        }
+
+        // 验证查询条件
+        function validateBirthYearQuery(query) {
+            if (!query.ageRanges || query.ageRanges.length === 0) {
+                return { valid: false, message: '请至少设置一个年龄段' };
+            }
+
+            for (let i = 0; i < query.ageRanges.length; i++) {
+                const range = query.ageRanges[i];
+                if (range.minAge < 0 || range.minAge > 120) {
+                    return { valid: false, message: `年龄段 ${i + 1} 的最小年龄必须在 0-120 之间` };
+                }
+                if (range.maxAge < 0 || range.maxAge > 120) {
+                    return { valid: false, message: `年龄段 ${i + 1} 的最大年龄必须在 0-120 之间` };
+                }
+                if (range.minAge > range.maxAge) {
+                    return { valid: false, message: `年龄段 ${i + 1} 的最小年龄不能大于最大年龄` };
+                }
+            }
+
+            return { valid: true };
+        }
+
+        // 执行出生年份查询
+        async function executeBirthYearQuery() {
+            showLoading();
+
+            try {
+                const response = await fetch(`${API_BASE}/query/birth-year/page`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(currentQuery)
+                });
+
+                const result = await response.json();
+
+                if (result.code === 200) {
+                    displayResults(result.data);
+                } else {
+                    showError(result.message || '查询失败，请稍后重试');
+                }
+            } catch (error) {
+                console.error('查询失败:', error);
+                showError('网络错误，请检查连接后重试');
+            }
+        }
+
+        // ===== 结果展示功能 =====
+        function displayResults(data) {
+            hideLoading();
+
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsBody = document.getElementById('resultsBody');
+            const resultCount = document.getElementById('resultCount');
+
+            // 显示结果区域
+            resultsSection.classList.add('show');
+
+            // 更新记录数
+            totalCount = data.total;
+            totalPages = Math.ceil(totalCount / pageSize);
+            resultCount.textContent = totalCount;
+
+            // 清空并填充数据
+            resultsBody.innerHTML = '';
+
+            if (data.records && data.records.length > 0) {
+                data.records.forEach(record => {
+                    const row = `
+                        <tr>
+                            <td>${record.personIc || '-'}</td>
+                            <td>${record.genderDesc || '-'}</td>
+                            <td>${record.birthYear || '-'}</td>
+                            <td>${record.age || '-'}</td>
+                            <td>${formatNumber(record.totalMileage)}</td>
+                            <td>${record.totalTravelTime || '-'}</td>
+                        </tr>
+                    `;
+                    resultsBody.insertAdjacentHTML('beforeend', row);
+                });
+            } else {
+                resultsBody.innerHTML = '<tr><td colspan="6" class="no-results">没有找到符合条件的数据</td></tr>';
+            }
+
+            // 更新分页
+            updatePagination();
+        }
+
+        // 格式化数字
+        function formatNumber(num) {
+            if (num === null || num === undefined) return '-';
+            return num.toLocaleString();
+        }
+
+        // ===== 分页功能 =====
+        function updatePagination() {
+            const pagination = document.getElementById('pagination');
+            let html = '';
+
+            // 上一页按钮
+            html += `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
+
+            // 页码按钮
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            if (startPage > 1) {
+                html += `<button class="page-btn" onclick="goToPage(1)">1</button>`;
+                if (startPage > 2) {
+                    html += `<span style="padding: 8px;">...</span>`;
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    html += `<span style="padding: 8px;">...</span>`;
+                }
+                html += `<button class="page-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+            }
+
+            // 下一页按钮
+            html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}>下一页</button>`;
+
+            pagination.innerHTML = html;
+        }
+
+        // 跳转到指定页
+        window.goToPage = async function(page) {
+            if (page < 1 || page > totalPages || page === currentPage) {
+                return;
+            }
+
+            currentPage = page;
+            currentQuery.current = page;
+            await executeBirthYearQuery();
+        };
+
+        // ===== 辅助功能 =====
+        function showLoading() {
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.classList.add('show');
+            document.getElementById('resultsBody').innerHTML = '<tr><td colspan="6" class="loading"><div class="spinner"></div>正在查询...</td></tr>';
+            document.getElementById('pagination').innerHTML = '';
+        }
+
+        function hideLoading() {
+            // Loading 会在 displayResults 中被替换
+        }
+
+        function hideResults() {
+            document.getElementById('resultsSection').classList.remove('show');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').classList.remove('show');
+        }
+
+        // ===== 重置功能 =====
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('reset', function() {
+                setTimeout(() => {
+                    if (this.id === 'birthYearForm') {
+                        // 重置年龄段为默认状态
+                        ageRangesContainer.innerHTML = '';
+                        ageRangeCounter = 0;
+                        addAgeRange(10, 20);
+                        addAgeRange(18, 25);
+                    }
+                    hideResults();
+                    hideError();
+                }, 0);
+            });
+        });
+
+        console.log('QStat 查询系统已加载完成！');
+    </script>
+</body>
+</html>

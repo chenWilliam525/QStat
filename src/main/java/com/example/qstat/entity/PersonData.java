@@ -21,7 +21,7 @@ public class PersonData {
      * 人员ID（主键）
      */
     @TableId(type = IdType.INPUT)
-    private Long personIc;
+    private Long personId;
 
     /**
      * 性别（0-女，1-男）

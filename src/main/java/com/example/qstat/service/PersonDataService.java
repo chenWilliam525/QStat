@@ -41,8 +41,8 @@ public class PersonDataService extends ServiceImpl<PersonDataMapper, PersonData>
         LambdaQueryWrapper<PersonData> wrapper = new LambdaQueryWrapper<>();
 
         // 人员ID查询
-        if (query.getPersonIc() != null) {
-            wrapper.eq(PersonData::getPersonIc, query.getPersonIc());
+        if (query.getPersonId() != null) {
+            wrapper.eq(PersonData::getPersonId, query.getPersonId());
         }
 
         // 性别查询
@@ -153,11 +153,11 @@ public class PersonDataService extends ServiceImpl<PersonDataMapper, PersonData>
     /**
      * 根据ID查询
      *
-     * @param personIc 人员ID
+     * @param personId 人员ID
      * @return 数据详情
      */
-    public PersonData getByPersonIc(Long personIc) {
-        PersonData data = personDataMapper.selectById(personIc);
+    public PersonData getByPersonId(Long personId) {
+        PersonData data = personDataMapper.selectById(personId);
         if (data != null) {
             enrichPersonData(data);
         }
