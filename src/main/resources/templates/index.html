@@ -878,20 +878,28 @@
             showLoading();
 
             try {
-                const response = await fetch(`${API_BASE}/query/birth-year/page`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(currentQuery)
-                });
+                // 同时查询数据和统计
+                const [dataResponse, statsResponse] = await Promise.all([
+                    fetch(`${API_BASE}/query/birth-year/page`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(currentQuery)
+                    }),
+                    fetch(`${API_BASE}/query/birth-year/statistics`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(currentQuery)
+                    })
+                ]);
 
-                const result = await response.json();
+                const dataResult = await dataResponse.json();
+                const statsResult = await statsResponse.json();
 
-                if (result.code === 200) {
-                    displayResults(result.data);
+                if (dataResult.code === 200 && statsResult.code === 200) {
+                    displayResults(dataResult.data);
+                    displayCharts(statsResult.data);
                 } else {
-                    showError(result.message || '查询失败，请稍后重试');
+                    showError(dataResult.message || statsResult.message || '查询失败，请稍后重试');
                 }
             } catch (error) {
                 console.error('查询失败:', error);
@@ -1240,8 +1248,14 @@
             // 性别饼图
             renderGenderPieChart(stats.genderStats);
 
-            // 区间分布柱状图
-            renderDistributionBarChart(stats.mileageRangeStats, '里程区间分布（柱状图）');
+            // 根据查询类型显示不同的柱状图
+            if (activeTab === 'mileage') {
+                renderDistributionBarChart(stats.mileageRangeStats, '里程区间分布（柱状图）');
+            } else if (activeTab === 'birth-year') {
+                renderDistributionBarChart(stats.ageRangeStats, '年龄区间分布（柱状图）');
+            } else if (activeTab === 'travel-time') {
+                renderDistributionBarChart(stats.timeRangeStats, '时间区间分布（柱状图）');
+            }
         }
 
         function renderGenderPieChart(genderStats) {

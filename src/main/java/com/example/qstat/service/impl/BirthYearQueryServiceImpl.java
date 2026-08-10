@@ -56,7 +56,7 @@ public class BirthYearQueryServiceImpl implements BirthYearQueryService {
 
         // 总人数
         Long totalCount = personDataMapper.selectCount(wrapper);
-        stats.put("totalCount", totalCount);
+        stats.put("total", totalCount != null ? totalCount : 0L);
 
         if (totalCount != null && totalCount > 0) {
             // 按性别统计
@@ -70,6 +70,7 @@ public class BirthYearQueryServiceImpl implements BirthYearQueryService {
                 male.put("gender", 1);
                 male.put("genderDesc", "男");
                 male.put("count", maleCount);
+                male.put("percentage", maleCount * 100.0 / totalCount);
                 genderStats.add(male);
             }
 
@@ -81,6 +82,7 @@ public class BirthYearQueryServiceImpl implements BirthYearQueryService {
                 female.put("gender", 0);
                 female.put("genderDesc", "女");
                 female.put("count", femaleCount);
+                female.put("percentage", femaleCount * 100.0 / totalCount);
                 genderStats.add(female);
             }
 
@@ -90,7 +92,8 @@ public class BirthYearQueryServiceImpl implements BirthYearQueryService {
             List<Map<String, Object>> ageRangeStats = new ArrayList<>();
             if (!CollectionUtils.isEmpty(query.getAgeRanges())) {
                 int currentYear = Year.now().getValue();
-                for (BirthYearQuery.AgeRange ageRange : query.getAgeRanges()) {
+                for (int i = 0; i < query.getAgeRanges().size(); i++) {
+                    BirthYearQuery.AgeRange ageRange = query.getAgeRanges().get(i);
                     LambdaQueryWrapper<PersonData> rangeWrapper = buildWrapperForAgeRange(ageRange, currentYear);
                     // 添加其他查询条件
                     if (query.getGender() != null) {
@@ -100,14 +103,20 @@ public class BirthYearQueryServiceImpl implements BirthYearQueryService {
                     Long count = personDataMapper.selectCount(rangeWrapper);
                     if (count != null && count > 0) {
                         Map<String, Object> rangeStat = new HashMap<>();
+                        rangeStat.put("rangeIndex", i + 1);
+                        rangeStat.put("rangeName", String.format("区间%d (%d-%d岁)", i + 1, ageRange.getMinAge(), ageRange.getMaxAge()));
                         rangeStat.put("minAge", ageRange.getMinAge());
                         rangeStat.put("maxAge", ageRange.getMaxAge());
                         rangeStat.put("count", count);
+                        rangeStat.put("percentage", count * 100.0 / totalCount);
                         ageRangeStats.add(rangeStat);
                     }
                 }
             }
             stats.put("ageRangeStats", ageRangeStats);
+        } else {
+            stats.put("genderStats", new ArrayList<>());
+            stats.put("ageRangeStats", new ArrayList<>());
         }
 
         return stats;
