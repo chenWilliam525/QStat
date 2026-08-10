@@ -1730,19 +1730,16 @@
             // 显示折线图容器
             document.getElementById('lineChartContainer').style.display = 'flex';
 
-            // 隐藏年龄和里程饼图容器，显示时间饼图
+            // 隐藏年龄、里程和时间饼图容器
             document.getElementById('ageRangePieContainer').style.display = 'none';
             document.getElementById('mileageRangePieContainer').style.display = 'none';
-            document.getElementById('timeRangePieContainer').style.display = 'flex';
+            document.getElementById('timeRangePieContainer').style.display = 'none';
 
             // 性别饼图
             renderGenderPieChart(stats.genderStats);
 
             // 时间区间柱状图
             renderDistributionBarChart(stats.timeRangeStats, '时间区间分布（柱状图）');
-
-            // 时间区间饼图
-            renderTimeRangePieChart(stats.timeRangeStats);
 
             // 飞行时间折线图（时间区间人数分布）
             renderTimeLineChart(stats.timeRangeStats);
