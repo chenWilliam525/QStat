@@ -584,7 +584,7 @@
             <!-- 时间查询专用的折线图 -->
             <div class="charts-container" id="lineChartContainer" style="display: none;">
                 <div class="chart-wrapper" style="flex: 1; min-width: 100%;">
-                    <h4>飞行时间分布（折线图）</h4>
+                    <h4>时间区间人数分布（折线图）</h4>
                     <canvas id="timeLineChart"></canvas>
                 </div>
             </div>
@@ -1744,11 +1744,11 @@
             // 时间区间饼图
             renderTimeRangePieChart(stats.timeRangeStats);
 
-            // 飞行时间折线图
-            renderTimeLineChart(stats.timeSeriesData);
+            // 飞行时间折线图（时间区间人数分布）
+            renderTimeLineChart(stats.timeRangeStats);
         }
 
-        function renderTimeLineChart(timeSeriesData) {
+        function renderTimeLineChart(timeRangeStats) {
             const ctx = document.getElementById('timeLineChart').getContext('2d');
 
             // 销毁旧图表
@@ -1757,7 +1757,7 @@
             }
 
             // 检查空数据
-            if (!timeSeriesData || timeSeriesData.length === 0) {
+            if (!timeRangeStats || timeRangeStats.length === 0) {
                 ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
                 ctx.font = '14px Arial';
                 ctx.fillStyle = '#999';
@@ -1766,37 +1766,35 @@
                 return;
             }
 
-            // 按飞行时间排序
-            const sortedData = [...timeSeriesData].sort((a, b) => a.travelTime - b.travelTime);
+            // 按时间区间排序（按最小时间排序）
+            const sortedData = [...timeRangeStats].sort((a, b) => {
+                const minA = a.minTravelTime !== null ? a.minTravelTime : 0;
+                const minB = b.minTravelTime !== null ? b.minTravelTime : 0;
+                return minA - minB;
+            });
 
-            const labels = sortedData.map(d => `人员${d.personId}`);
-            const timeData = sortedData.map(d => d.travelTime);
-            const mileageData = sortedData.map(d => d.mileage);
+            // 横坐标：时间区间标签
+            const labels = sortedData.map(s => s.rangeName || `${s.minTravelTime}-${s.maxTravelTime}小时`);
+            // 纵坐标：人数
+            const countData = sortedData.map(s => s.count);
 
             timeLineChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [
-                        {
-                            label: '飞行时间（小时）',
-                            data: timeData,
-                            borderColor: 'rgb(102, 126, 234)',
-                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                            tension: 0.3,
-                            fill: true,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: '飞行里程（公里）',
-                            data: mileageData,
-                            borderColor: 'rgb(244, 114, 182)',
-                            backgroundColor: 'rgba(244, 114, 182, 0.1)',
-                            tension: 0.3,
-                            fill: true,
-                            yAxisID: 'y1'
-                        }
-                    ]
+                    datasets: [{
+                        label: '人数',
+                        data: countData,
+                        borderColor: 'rgb(102, 126, 234)',
+                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: 'rgb(102, 126, 234)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
                 },
                 options: {
                     responsive: true,
@@ -1815,38 +1813,39 @@
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    const label = context.dataset.label || '';
                                     const value = context.parsed.y || 0;
-                                    const dataIndex = context.dataIndex;
-                                    const gender = sortedData[dataIndex].genderDesc;
-                                    return `${label}: ${formatNumber(value)} (${gender})`;
+                                    return `人数: ${value}人`;
                                 }
                             }
                         }
                     },
                     scales: {
                         y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: {
-                                display: true,
-                                text: '飞行时间（小时）'
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            title: {
-                                display: true,
-                                text: '飞行里程（公里）'
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    return value + '人';
+                                }
                             },
-                            grid: {
-                                drawOnChartArea: false
+                            title: {
+                                display: true,
+                                text: '人数',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
                             }
                         },
                         x: {
+                            title: {
+                                display: true,
+                                text: '时间区间（小时）',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
                             ticks: {
                                 maxRotation: 45,
                                 minRotation: 45
