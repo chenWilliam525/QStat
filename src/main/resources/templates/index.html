@@ -567,6 +567,20 @@
                     <canvas id="ageRangePieChart"></canvas>
                 </div>
             </div>
+            <!-- 里程区间分布饼图容器（仅里程查询显示） -->
+            <div class="charts-container" id="mileageRangePieContainer" style="display: none;">
+                <div class="chart-wrapper" style="flex: 1; min-width: 100%;">
+                    <h4>里程区间分布（饼图）</h4>
+                    <canvas id="mileageRangePieChart"></canvas>
+                </div>
+            </div>
+            <!-- 时间区间分布饼图容器（仅时间查询显示） -->
+            <div class="charts-container" id="timeRangePieContainer" style="display: none;">
+                <div class="chart-wrapper" style="flex: 1; min-width: 100%;">
+                    <h4>时间区间分布（饼图）</h4>
+                    <canvas id="timeRangePieChart"></canvas>
+                </div>
+            </div>
             <!-- 时间查询专用的折线图 -->
             <div class="charts-container" id="lineChartContainer" style="display: none;">
                 <div class="chart-wrapper" style="flex: 1; min-width: 100%;">
@@ -640,6 +654,8 @@
         let genderPieChart = null;
         let distributionBarChart = null;
         let ageRangePieChart = null;
+        let mileageRangePieChart = null;
+        let timeRangePieChart = null;
         let timeLineChart = null;
 
         // ===== 标签页切换功能 =====
@@ -1266,8 +1282,11 @@
             // 根据查询类型显示不同的柱状图
             if (activeTab === 'mileage') {
                 renderDistributionBarChart(stats.mileageRangeStats, '里程区间分布（柱状图）');
-                // 隐藏年龄饼图容器
+                // 隐藏年龄和时间饼图容器，显示里程饼图
                 document.getElementById('ageRangePieContainer').style.display = 'none';
+                document.getElementById('timeRangePieContainer').style.display = 'none';
+                document.getElementById('mileageRangePieContainer').style.display = 'flex';
+                renderMileageRangePieChart(stats.mileageRangeStats);
             } else if (activeTab === 'birth-year') {
                 renderDistributionBarChart(stats.ageRangeStats, '年龄区间分布（柱状图）');
                 // 显示并渲染年龄饼图
@@ -1368,6 +1387,134 @@
             ];
 
             ageRangePieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: { size: 14 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return `${label}: ${value}人 (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderMileageRangePieChart(mileageRangeStats) {
+            const ctx = document.getElementById('mileageRangePieChart').getContext('2d');
+
+            // 销毁旧图表
+            if (mileageRangePieChart) {
+                mileageRangePieChart.destroy();
+            }
+
+            // 检查空数据
+            if (!mileageRangeStats || mileageRangeStats.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#999';
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+
+            const labels = mileageRangeStats.map(s => s.rangeName || `${s.minMileage}-${s.maxMileage}公里`);
+            const data = mileageRangeStats.map(s => s.count);
+
+            // 使用多种颜色区分不同里程区间
+            const colors = [
+                '#667eea', '#f472b6', '#34d399', '#fb923c', '#8b5cf6',
+                '#06b6d4', '#f59e0b', '#ef4444', '#84cc16', '#6366f1'
+            ];
+
+            mileageRangePieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: { size: 14 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return `${label}: ${value}人 (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTimeRangePieChart(timeRangeStats) {
+            const ctx = document.getElementById('timeRangePieChart').getContext('2d');
+
+            // 销毁旧图表
+            if (timeRangePieChart) {
+                timeRangePieChart.destroy();
+            }
+
+            // 检查空数据
+            if (!timeRangeStats || timeRangeStats.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#999';
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+
+            const labels = timeRangeStats.map(s => s.rangeName || `${s.minTravelTime}-${s.maxTravelTime}小时`);
+            const data = timeRangeStats.map(s => s.count);
+
+            // 使用多种颜色区分不同时间区间
+            const colors = [
+                '#667eea', '#f472b6', '#34d399', '#fb923c', '#8b5cf6',
+                '#06b6d4', '#f59e0b', '#ef4444', '#84cc16', '#6366f1'
+            ];
+
+            timeRangePieChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
                     labels: labels,
@@ -1583,14 +1730,19 @@
             // 显示折线图容器
             document.getElementById('lineChartContainer').style.display = 'flex';
 
-            // 隐藏年龄饼图容器
+            // 隐藏年龄和里程饼图容器，显示时间饼图
             document.getElementById('ageRangePieContainer').style.display = 'none';
+            document.getElementById('mileageRangePieContainer').style.display = 'none';
+            document.getElementById('timeRangePieContainer').style.display = 'flex';
 
             // 性别饼图
             renderGenderPieChart(stats.genderStats);
 
             // 时间区间柱状图
             renderDistributionBarChart(stats.timeRangeStats, '时间区间分布（柱状图）');
+
+            // 时间区间饼图
+            renderTimeRangePieChart(stats.timeRangeStats);
 
             // 飞行时间折线图
             renderTimeLineChart(stats.timeSeriesData);
@@ -1715,6 +1867,8 @@
             document.getElementById('chartsSection').style.display = 'none';
             document.getElementById('lineChartContainer').style.display = 'none';
             document.getElementById('ageRangePieContainer').style.display = 'none';
+            document.getElementById('mileageRangePieContainer').style.display = 'none';
+            document.getElementById('timeRangePieContainer').style.display = 'none';
         }
 
         function hideLoading() {
@@ -1726,6 +1880,8 @@
             document.getElementById('chartsSection').style.display = 'none';
             document.getElementById('lineChartContainer').style.display = 'none';
             document.getElementById('ageRangePieContainer').style.display = 'none';
+            document.getElementById('mileageRangePieContainer').style.display = 'none';
+            document.getElementById('timeRangePieContainer').style.display = 'none';
         }
 
         function showError(message) {
