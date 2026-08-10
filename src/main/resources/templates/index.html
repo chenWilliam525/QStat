@@ -635,6 +635,13 @@
         let timeLineChart = null;
 
         // ===== 标签页切换功能 =====
+        // 标签页名称到表单ID的映射
+        const tabIdMap = {
+            'birth-year': 'birthYearForm',
+            'mileage': 'mileageForm',
+            'travel-time': 'travelTimeForm'
+        };
+
         document.querySelectorAll('.query-tab').forEach(tab => {
             tab.addEventListener('click', function() {
                 // 切换标签页样式
@@ -644,7 +651,7 @@
                 // 切换表单显示
                 const tabName = this.dataset.tab;
                 document.querySelectorAll('.query-form').forEach(form => form.classList.remove('active'));
-                document.getElementById(tabName + 'Form').classList.add('active');
+                document.getElementById(tabIdMap[tabName]).classList.add('active');
 
                 // 隐藏结果区域
                 hideResults();
