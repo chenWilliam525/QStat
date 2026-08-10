@@ -1252,6 +1252,17 @@
                 genderPieChart.destroy();
             }
 
+            // 检查空数据
+            if (!genderStats || genderStats.length === 0) {
+                // 显示空数据提示
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#999';
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+
             const labels = genderStats.map(s => s.genderDesc);
             const data = genderStats.map(s => s.count);
             const colors = ['#667eea', '#f472b6'];
@@ -1299,6 +1310,16 @@
             // 销毁旧图表
             if (mileageBarChart) {
                 mileageBarChart.destroy();
+            }
+
+            // 检查空数据
+            if (!mileageStats || mileageStats.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#999';
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
             }
 
             const labels = mileageStats.map(s => s.rangeName);
@@ -1377,6 +1398,16 @@
 
             // 更新标题
             document.getElementById('distributionChartTitle').textContent = title;
+
+            // 检查空数据
+            if (!stats || stats.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#999';
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
 
             const labels = stats.map(s => s.rangeName);
             const data = stats.map(s => s.count);
@@ -1468,6 +1499,16 @@
             // 销毁旧图表
             if (timeLineChart) {
                 timeLineChart.destroy();
+            }
+
+            // 检查空数据
+            if (!timeSeriesData || timeSeriesData.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#999';
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
             }
 
             // 按飞行时间排序
@@ -1567,6 +1608,9 @@
             resultsSection.classList.add('show');
             document.getElementById('resultsBody').innerHTML = '<tr><td colspan="6" class="loading"><div class="spinner"></div>正在查询...</td></tr>';
             document.getElementById('pagination').innerHTML = '';
+            // 隐藏图表区域（加载时）
+            document.getElementById('chartsSection').style.display = 'none';
+            document.getElementById('lineChartContainer').style.display = 'none';
         }
 
         function hideLoading() {
@@ -1575,6 +1619,8 @@
 
         function hideResults() {
             document.getElementById('resultsSection').classList.remove('show');
+            document.getElementById('chartsSection').style.display = 'none';
+            document.getElementById('lineChartContainer').style.display = 'none';
         }
 
         function showError(message) {
