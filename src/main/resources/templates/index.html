@@ -551,11 +551,7 @@
                 <h3>统计图表</h3>
             </div>
             <div class="charts-container">
-                <div class="chart-wrapper">
-                    <h4>性别分布（饼图）</h4>
-                    <canvas id="genderPieChart"></canvas>
-                </div>
-                <div class="chart-wrapper">
+                <div class="chart-wrapper" style="flex: 1; min-width: 100%;">
                     <h4 id="distributionChartTitle">区间分布（柱状图）</h4>
                     <canvas id="distributionBarChart"></canvas>
                 </div>
@@ -586,16 +582,6 @@
                 <div class="chart-wrapper" style="flex: 1; min-width: 100%;">
                     <h4>时间区间人数分布（折线图）</h4>
                     <canvas id="timeLineChart"></canvas>
-                </div>
-            </div>
-            <div class="chart-legend">
-                <div class="legend-item">
-                    <span class="legend-color" style="background: #667eea;"></span>
-                    <span class="legend-text">男性</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color" style="background: #f472b6;"></span>
-                    <span class="legend-text">女性</span>
                 </div>
             </div>
         </div>
@@ -651,7 +637,6 @@
         let currentTimeQuery = null;
 
         // 图表实例
-        let genderPieChart = null;
         let distributionBarChart = null;
         let ageRangePieChart = null;
         let mileageRangePieChart = null;
@@ -1276,9 +1261,6 @@
             // 隐藏折线图容器
             document.getElementById('lineChartContainer').style.display = 'none';
 
-            // 性别饼图
-            renderGenderPieChart(stats.genderStats);
-
             // 根据查询类型显示不同的柱状图
             if (activeTab === 'mileage') {
                 renderDistributionBarChart(stats.mileageRangeStats, '里程区间分布（柱状图）');
@@ -1294,69 +1276,12 @@
                 renderAgeRangePieChart(stats.ageRangeStats);
             } else if (activeTab === 'travel-time') {
                 renderDistributionBarChart(stats.timeRangeStats, '时间区间分布（柱状图）');
-                // 隐藏年龄饼图容器
+                // 隐藏年龄和里程饼图容器
                 document.getElementById('ageRangePieContainer').style.display = 'none';
+                document.getElementById('mileageRangePieContainer').style.display = 'none';
             }
         }
-
-        function renderGenderPieChart(genderStats) {
-            const ctx = document.getElementById('genderPieChart').getContext('2d');
-
-            // 销毁旧图表
-            if (genderPieChart) {
-                genderPieChart.destroy();
             }
-
-            // 检查空数据
-            if (!genderStats || genderStats.length === 0) {
-                // 显示空数据提示
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                ctx.font = '14px Arial';
-                ctx.fillStyle = '#999';
-                ctx.textAlign = 'center';
-                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
-                return;
-            }
-
-            const labels = genderStats.map(s => s.genderDesc);
-            const data = genderStats.map(s => s.count);
-            const colors = ['#667eea', '#f472b6'];
-
-            genderPieChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: colors.slice(0, labels.length),
-                        borderWidth: 2,
-                        borderColor: '#fff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                font: { size: 14 }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = ((value / total) * 100).toFixed(1);
-                                    return `${label}: ${value}人 (${percentage}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
         }
 
         function renderAgeRangePieChart(ageRangeStats) {
@@ -1734,9 +1659,6 @@
             document.getElementById('ageRangePieContainer').style.display = 'none';
             document.getElementById('mileageRangePieContainer').style.display = 'none';
             document.getElementById('timeRangePieContainer').style.display = 'none';
-
-            // 性别饼图
-            renderGenderPieChart(stats.genderStats);
 
             // 时间区间柱状图
             renderDistributionBarChart(stats.timeRangeStats, '时间区间分布（柱状图）');
