@@ -560,6 +560,13 @@
                     <canvas id="distributionBarChart"></canvas>
                 </div>
             </div>
+            <!-- 年龄段分布饼图容器（仅出生年份查询显示） -->
+            <div class="charts-container" id="ageRangePieContainer" style="display: none;">
+                <div class="chart-wrapper" style="flex: 1; min-width: 100%;">
+                    <h4>年龄段分布（饼图）</h4>
+                    <canvas id="ageRangePieChart"></canvas>
+                </div>
+            </div>
             <!-- 时间查询专用的折线图 -->
             <div class="charts-container" id="lineChartContainer" style="display: none;">
                 <div class="chart-wrapper" style="flex: 1; min-width: 100%;">
@@ -632,6 +639,7 @@
         // 图表实例
         let genderPieChart = null;
         let distributionBarChart = null;
+        let ageRangePieChart = null;
         let timeLineChart = null;
 
         // ===== 标签页切换功能 =====
@@ -1258,10 +1266,17 @@
             // 根据查询类型显示不同的柱状图
             if (activeTab === 'mileage') {
                 renderDistributionBarChart(stats.mileageRangeStats, '里程区间分布（柱状图）');
+                // 隐藏年龄饼图容器
+                document.getElementById('ageRangePieContainer').style.display = 'none';
             } else if (activeTab === 'birth-year') {
                 renderDistributionBarChart(stats.ageRangeStats, '年龄区间分布（柱状图）');
+                // 显示并渲染年龄饼图
+                document.getElementById('ageRangePieContainer').style.display = 'flex';
+                renderAgeRangePieChart(stats.ageRangeStats);
             } else if (activeTab === 'travel-time') {
                 renderDistributionBarChart(stats.timeRangeStats, '时间区间分布（柱状图）');
+                // 隐藏年龄饼图容器
+                document.getElementById('ageRangePieContainer').style.display = 'none';
             }
         }
 
@@ -1316,6 +1331,70 @@
                                     const value = context.parsed || 0;
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                     const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value}人 (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderAgeRangePieChart(ageRangeStats) {
+            const ctx = document.getElementById('ageRangePieChart').getContext('2d');
+
+            // 销毁旧图表
+            if (ageRangePieChart) {
+                ageRangePieChart.destroy();
+            }
+
+            // 检查空数据
+            if (!ageRangeStats || ageRangeStats.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#999';
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+
+            const labels = ageRangeStats.map(s => s.rangeName || `${s.minAge}-${s.maxAge}岁`);
+            const data = ageRangeStats.map(s => s.count);
+
+            // 使用多种颜色区分不同年龄段
+            const colors = [
+                '#667eea', '#f472b6', '#34d399', '#fb923c', '#8b5cf6',
+                '#06b6d4', '#f59e0b', '#ef4444', '#84cc16', '#6366f1'
+            ];
+
+            ageRangePieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: { size: 14 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
                                     return `${label}: ${value}人 (${percentage}%)`;
                                 }
                             }
@@ -1504,6 +1583,9 @@
             // 显示折线图容器
             document.getElementById('lineChartContainer').style.display = 'flex';
 
+            // 隐藏年龄饼图容器
+            document.getElementById('ageRangePieContainer').style.display = 'none';
+
             // 性别饼图
             renderGenderPieChart(stats.genderStats);
 
@@ -1632,6 +1714,7 @@
             // 隐藏图表区域（加载时）
             document.getElementById('chartsSection').style.display = 'none';
             document.getElementById('lineChartContainer').style.display = 'none';
+            document.getElementById('ageRangePieContainer').style.display = 'none';
         }
 
         function hideLoading() {
@@ -1642,6 +1725,7 @@
             document.getElementById('resultsSection').classList.remove('show');
             document.getElementById('chartsSection').style.display = 'none';
             document.getElementById('lineChartContainer').style.display = 'none';
+            document.getElementById('ageRangePieContainer').style.display = 'none';
         }
 
         function showError(message) {
@@ -1703,9 +1787,6 @@
                     hideError();
                     hideMileageError();
                     hideTimeError();
-                    // 隐藏图表
-                    document.getElementById('chartsSection').style.display = 'none';
-                    document.getElementById('lineChartContainer').style.display = 'none';
                 }, 0);
             });
         });
