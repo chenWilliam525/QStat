@@ -514,15 +514,12 @@
 
         <!-- 按飞行时间查询表单 -->
         <form id="travelTimeForm" class="query-form">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>最小飞行时间（小时）</label>
-                    <input type="number" name="minTravelTime" class="form-control" placeholder="例如：1" min="0">
+            <div class="form-group">
+                <label>时间区间设置（可添加多个区间，不允许重叠）</label>
+                <div id="timeRangesContainer">
+                    <!-- 时间区间列表将在这里动态生成 -->
                 </div>
-                <div class="form-group">
-                    <label>最大飞行时间（小时）</label>
-                    <input type="number" name="maxTravelTime" class="form-control" placeholder="例如：100" min="0">
-                </div>
+                <button type="button" class="add-range-btn" id="addTimeRangeBtn">+ 添加时间区间</button>
             </div>
             <div class="form-group">
                 <label>性别（可选）</label>
@@ -545,6 +542,7 @@
                 <button type="submit" class="btn btn-primary">查询数据</button>
                 <button type="reset" class="btn btn-secondary">重置条件</button>
             </div>
+            <div class="error-message" id="timeErrorMessage"></div>
         </form>
 
         <!-- 图表统计区域 -->
@@ -558,8 +556,15 @@
                     <canvas id="genderPieChart"></canvas>
                 </div>
                 <div class="chart-wrapper">
-                    <h4>里程区间分布（柱状图）</h4>
-                    <canvas id="mileageBarChart"></canvas>
+                    <h4 id="distributionChartTitle">区间分布（柱状图）</h4>
+                    <canvas id="distributionBarChart"></canvas>
+                </div>
+            </div>
+            <!-- 时间查询专用的折线图 -->
+            <div class="charts-container" id="lineChartContainer" style="display: none;">
+                <div class="chart-wrapper" style="flex: 1; min-width: 100%;">
+                    <h4>飞行时间分布（折线图）</h4>
+                    <canvas id="timeLineChart"></canvas>
                 </div>
             </div>
             <div class="chart-legend">
@@ -622,10 +627,12 @@
         // 当前查询条件（缓存）
         let currentQuery = null;
         let currentMileageQuery = null;
+        let currentTimeQuery = null;
 
         // 图表实例
         let genderPieChart = null;
-        let mileageBarChart = null;
+        let distributionBarChart = null;
+        let timeLineChart = null;
 
         // ===== 标签页切换功能 =====
         document.querySelectorAll('.query-tab').forEach(tab => {
@@ -643,6 +650,7 @@
                 hideResults();
                 // 隐藏图表区域
                 document.getElementById('chartsSection').style.display = 'none';
+                document.getElementById('lineChartContainer').style.display = 'none';
 
                 // 更新当前标签
                 activeTab = tabName;
@@ -740,6 +748,54 @@
         // 更新里程区间编号
         function updateMileageRangeNumbers() {
             const ranges = mileageRangesContainer.querySelectorAll('.age-range-item');
+            ranges.forEach((range, index) => {
+                range.querySelector('.range-number').textContent = (index + 1) + '.';
+            });
+        }
+
+        // ===== 时间区间管理功能 =====
+        const timeRangesContainer = document.getElementById('timeRangesContainer');
+        const addTimeRangeBtn = document.getElementById('addTimeRangeBtn');
+        let timeRangeCounter = 0;
+
+        // 初始化：添加默认时间区间
+        addTimeRange(0, 10);
+        addTimeRange(10, 50);
+
+        // 添加时间区间
+        addTimeRangeBtn.addEventListener('click', () => {
+            addTimeRange();
+        });
+
+        function addTimeRange(minTime = '', maxTime = '') {
+            timeRangeCounter++;
+            const rangeHtml = `
+                <div class="age-range-item" data-time-range-id="${timeRangeCounter}">
+                    <span class="range-number">${timeRangeCounter}.</span>
+                    <input type="number" class="form-control min-time" placeholder="最小时间(小时)"
+                           value="${minTime}" min="0" style="flex: 1;">
+                    <span>-</span>
+                    <input type="number" class="form-control max-time" placeholder="最大时间(小时)"
+                           value="${maxTime}" min="0" style="flex: 1;">
+                    <span>小时</span>
+                    <button type="button" class="remove-btn" onclick="removeTimeRange(${timeRangeCounter})">×</button>
+                </div>
+            `;
+            timeRangesContainer.insertAdjacentHTML('beforeend', rangeHtml);
+        }
+
+        // 删除时间区间
+        window.removeTimeRange = function(rangeId) {
+            const rangeItem = document.querySelector(`[data-time-range-id="${rangeId}"]`);
+            if (rangeItem) {
+                rangeItem.remove();
+                updateTimeRangeNumbers();
+            }
+        };
+
+        // 更新时间区间编号
+        function updateTimeRangeNumbers() {
+            const ranges = timeRangesContainer.querySelectorAll('.age-range-item');
             ranges.forEach((range, index) => {
                 range.querySelector('.range-number').textContent = (index + 1) + '.';
             });
@@ -949,6 +1005,131 @@
             }
         }
 
+        // ===== 时间查询功能 =====
+        document.getElementById('travelTimeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // 收集查询条件
+            const query = collectTimeQuery();
+
+            // 验证
+            const validation = validateTimeQuery(query);
+            if (!validation.valid) {
+                showTimeError(validation.message);
+                return;
+            }
+
+            hideTimeError();
+
+            // 执行查询
+            currentTimeQuery = query;
+            currentPage = 1;
+            await executeTimeQuery();
+        });
+
+        // 收集时间查询条件
+        function collectTimeQuery() {
+            const timeRanges = [];
+            const rangeItems = timeRangesContainer.querySelectorAll('.age-range-item');
+
+            rangeItems.forEach(item => {
+                const minTime = item.querySelector('.min-time').value;
+                const maxTime = item.querySelector('.max-time').value;
+
+                if (minTime !== '' || maxTime !== '') {
+                    timeRanges.push({
+                        minTravelTime: minTime !== '' ? parseInt(minTime) : null,
+                        maxTravelTime: maxTime !== '' ? parseInt(maxTime) : null
+                    });
+                }
+            });
+
+            const genderInput = document.querySelector('#travelTimeForm input[name="gender"]:checked');
+            const gender = genderInput && genderInput.value !== '' ? parseInt(genderInput.value) : null;
+
+            return {
+                timeRanges: timeRanges,
+                gender: gender,
+                current: currentPage,
+                size: pageSize
+            };
+        }
+
+        // 验证时间查询条件（检查区间是否重叠）
+        function validateTimeQuery(query) {
+            if (!query.timeRanges || query.timeRanges.length === 0) {
+                return { valid: false, message: '请至少设置一个时间区间' };
+            }
+
+            // 检查每个区间是否有效
+            for (let i = 0; i < query.timeRanges.length; i++) {
+                const range = query.timeRanges[i];
+                if (range.minTravelTime !== null && range.minTravelTime < 0) {
+                    return { valid: false, message: `时间区间 ${i + 1} 的最小时间不能为负数` };
+                }
+                if (range.maxTravelTime !== null && range.maxTravelTime < 0) {
+                    return { valid: false, message: `时间区间 ${i + 1} 的最大时间不能为负数` };
+                }
+                if (range.minTravelTime !== null && range.maxTravelTime !== null && range.minTravelTime > range.maxTravelTime) {
+                    return { valid: false, message: `时间区间 ${i + 1} 的最小时间不能大于最大时间` };
+                }
+            }
+
+            // 检查区间是否重叠
+            for (let i = 0; i < query.timeRanges.length; i++) {
+                for (let j = i + 1; j < query.timeRanges.length; j++) {
+                    const range1 = query.timeRanges[i];
+                    const range2 = query.timeRanges[j];
+
+                    const r1Min = range1.minTravelTime !== null ? range1.minTravelTime : 0;
+                    const r1Max = range1.maxTravelTime !== null ? range1.maxTravelTime : Number.MAX_SAFE_INTEGER;
+                    const r2Min = range2.minTravelTime !== null ? range2.minTravelTime : 0;
+                    const r2Max = range2.maxTravelTime !== null ? range2.maxTravelTime : Number.MAX_SAFE_INTEGER;
+
+                    // 检查是否重叠
+                    if (r1Min < r2Max && r2Min < r1Max) {
+                        return { valid: false, message: `时间区间 ${i + 1} 与区间 ${j + 1} 存在重叠，时间区间不允许重叠` };
+                    }
+                }
+            }
+
+            return { valid: true };
+        }
+
+        // 执行时间查询
+        async function executeTimeQuery() {
+            showLoading();
+
+            try {
+                // 同时查询数据和统计
+                const [dataResponse, statsResponse] = await Promise.all([
+                    fetch(`${API_BASE}/query/travel-time/page`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(currentTimeQuery)
+                    }),
+                    fetch(`${API_BASE}/query/travel-time/statistics`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(currentTimeQuery)
+                    })
+                ]);
+
+                const dataResult = await dataResponse.json();
+                const statsResult = await statsResponse.json();
+
+                if (dataResult.code === 200 && statsResult.code === 200) {
+                    displayResults(dataResult.data);
+                    displayTimeCharts(statsResult.data);
+                } else {
+                    showError(dataResult.message || statsResult.message || '查询失败，请稍后重试');
+                }
+            } catch (error) {
+                console.error('查询失败:', error);
+                showError('网络错误，请检查连接后重试');
+            }
+        }
+
         // ===== 结果展示功能 =====
         function displayResults(data) {
             hideLoading();
@@ -1053,11 +1234,14 @@
             const chartsSection = document.getElementById('chartsSection');
             chartsSection.style.display = 'block';
 
+            // 隐藏折线图容器
+            document.getElementById('lineChartContainer').style.display = 'none';
+
             // 性别饼图
             renderGenderPieChart(stats.genderStats);
 
-            // 里程区间柱状图
-            renderMileageBarChart(stats.mileageRangeStats);
+            // 区间分布柱状图
+            renderDistributionBarChart(stats.mileageRangeStats, '里程区间分布（柱状图）');
         }
 
         function renderGenderPieChart(genderStats) {
@@ -1183,6 +1367,200 @@
             });
         }
 
+        function renderDistributionBarChart(stats, title) {
+            const ctx = document.getElementById('distributionBarChart').getContext('2d');
+
+            // 销毁旧图表
+            if (distributionBarChart) {
+                distributionBarChart.destroy();
+            }
+
+            // 更新标题
+            document.getElementById('distributionChartTitle').textContent = title;
+
+            const labels = stats.map(s => s.rangeName);
+            const data = stats.map(s => s.count);
+
+            distributionBarChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '人数',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(244, 114, 182, 0.8)',
+                            'rgba(52, 211, 153, 0.8)',
+                            'rgba(251, 146, 60, 0.8)',
+                            'rgba(139, 92, 246, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgb(102, 126, 234)',
+                            'rgb(244, 114, 182)',
+                            'rgb(52, 211, 153)',
+                            'rgb(251, 146, 60)',
+                            'rgb(139, 92, 246)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.y || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return `人数: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            },
+                            title: {
+                                display: true,
+                                text: '人数'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ===== 时间图表展示功能 =====
+        function displayTimeCharts(stats) {
+            const chartsSection = document.getElementById('chartsSection');
+            chartsSection.style.display = 'block';
+
+            // 显示折线图容器
+            document.getElementById('lineChartContainer').style.display = 'flex';
+
+            // 性别饼图
+            renderGenderPieChart(stats.genderStats);
+
+            // 时间区间柱状图
+            renderDistributionBarChart(stats.timeRangeStats, '时间区间分布（柱状图）');
+
+            // 飞行时间折线图
+            renderTimeLineChart(stats.timeSeriesData);
+        }
+
+        function renderTimeLineChart(timeSeriesData) {
+            const ctx = document.getElementById('timeLineChart').getContext('2d');
+
+            // 销毁旧图表
+            if (timeLineChart) {
+                timeLineChart.destroy();
+            }
+
+            // 按飞行时间排序
+            const sortedData = [...timeSeriesData].sort((a, b) => a.travelTime - b.travelTime);
+
+            const labels = sortedData.map(d => `人员${d.personId}`);
+            const timeData = sortedData.map(d => d.travelTime);
+            const mileageData = sortedData.map(d => d.mileage);
+
+            timeLineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '飞行时间（小时）',
+                            data: timeData,
+                            borderColor: 'rgb(102, 126, 234)',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '飞行里程（公里）',
+                            data: mileageData,
+                            borderColor: 'rgb(244, 114, 182)',
+                            backgroundColor: 'rgba(244, 114, 182, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: { size: 14 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y || 0;
+                                    const dataIndex = context.dataIndex;
+                                    const gender = sortedData[dataIndex].genderDesc;
+                                    return `${label}: ${formatNumber(value)} (${gender})`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: '飞行时间（小时）'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: '飞行里程（公里）'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         // ===== 辅助功能 =====
         function showLoading() {
             const resultsSection = document.getElementById('resultsSection');
@@ -1219,6 +1597,16 @@
             document.getElementById('mileageErrorMessage').classList.remove('show');
         }
 
+        function showTimeError(message) {
+            const errorDiv = document.getElementById('timeErrorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        function hideTimeError() {
+            document.getElementById('timeErrorMessage').classList.remove('show');
+        }
+
         // ===== 重置功能 =====
         document.querySelectorAll('form').forEach(form => {
             form.addEventListener('reset', function() {
@@ -1237,11 +1625,20 @@
                         addMileageRange(0, 10000);
                         addMileageRange(10000, 50000);
                     }
+                    if (this.id === 'travelTimeForm') {
+                        // 重置时间区间为默认状态
+                        timeRangesContainer.innerHTML = '';
+                        timeRangeCounter = 0;
+                        addTimeRange(0, 10);
+                        addTimeRange(10, 50);
+                    }
                     hideResults();
                     hideError();
                     hideMileageError();
+                    hideTimeError();
                     // 隐藏图表
                     document.getElementById('chartsSection').style.display = 'none';
+                    document.getElementById('lineChartContainer').style.display = 'none';
                 }, 0);
             });
         });

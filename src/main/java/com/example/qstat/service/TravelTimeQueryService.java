@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.example.qstat.dto.TravelTimeQuery;
 import com.example.qstat.entity.PersonData;
 
+import java.util.Map;
+
 /**
  * 飞行时间查询服务
  *
@@ -26,5 +28,5 @@ public interface TravelTimeQueryService {
      * @param query 查询条件
      * @return 统计结果
      */
-    Object statistics(TravelTimeQuery query);
+    Map<String, Object> statistics(TravelTimeQuery query);
 }

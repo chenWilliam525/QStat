@@ -3,6 +3,8 @@ package com.example.qstat.dto;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.util.List;
+
 /**
  * 飞行时间查询条件
  *
@@ -14,17 +16,28 @@ import lombok.EqualsAndHashCode;
 public class TravelTimeQuery extends PageQuery {
 
     /**
-     * 最小飞行时间
+     * 时间区间列表（支持多个区间，不允许重叠）
      */
-    private Long minTravelTime;
-
-    /**
-     * 最大飞行时间
-     */
-    private Long maxTravelTime;
+    private List<TimeRange> timeRanges;
 
     /**
      * 性别（0-女，1-男）
      */
     private Integer gender;
+
+    /**
+     * 时间区间
+     */
+    @Data
+    public static class TimeRange {
+        /**
+         * 最小时间（小时）
+         */
+        private Long minTravelTime;
+
+        /**
+         * 最大时间（小时）
+         */
+        private Long maxTravelTime;
+    }
 }
