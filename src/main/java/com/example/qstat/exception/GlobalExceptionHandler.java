@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.sql.SQLException;
 import java.util.stream.Collectors;
 
 /**
@@ -54,11 +55,38 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 处理SQL异常
+     */
+    @ExceptionHandler(SQLException.class)
+    public Result<?> handleSQLException(SQLException e) {
+        log.error("数据库异常：", e);
+        return Result.error("数据库错误：" + e.getMessage());
+    }
+
+    /**
+     * 处理空指针异常
+     */
+    @ExceptionHandler(NullPointerException.class)
+    public Result<?> handleNullPointerException(NullPointerException e) {
+        log.error("空指针异常：", e);
+        return Result.error("系统处理异常，请联系管理员");
+    }
+
+    /**
+     * 处理非法参数异常
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public Result<?> handleIllegalArgumentException(IllegalArgumentException e) {
+        log.error("非法参数：{}", e.getMessage());
+        return Result.error("参数错误：" + e.getMessage());
+    }
+
+    /**
      * 处理未知异常
      */
     @ExceptionHandler(Exception.class)
     public Result<?> handleException(Exception e) {
         log.error("系统异常：", e);
-        return Result.error("系统繁忙，请稍后重试");
+        return Result.error("系统繁忙：" + e.getClass().getSimpleName() + " - " + e.getMessage());
     }
 }
