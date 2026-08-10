@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QStat - 数据查询系统</title>
+    <!-- Layui框架 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.6/dist/css/layui.css">
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.9.6/dist/layui.js"></script>
+    <!-- Chart.js图表库 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
@@ -268,63 +272,6 @@
             overflow-x: auto;
             max-height: 500px;
             overflow-y: auto;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .data-table th,
-        .data-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-
-        .data-table th {
-            background: #f8f9fa;
-            color: #333;
-            font-weight: 600;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .data-table tbody tr:hover {
-            background: #f8f9fa;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .page-btn {
-            padding: 8px 15px;
-            border: 1px solid #ddd;
-            background: white;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .page-btn:hover:not(:disabled) {
-            border-color: #667eea;
-            color: #667eea;
-        }
-
-        .page-btn.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-
-        .page-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
         }
 
         .loading {
@@ -593,15 +540,15 @@
                 <span class="results-count">共找到 <strong id="resultCount">0</strong> 条记录</span>
             </div>
             <div class="table-container">
-                <table class="data-table">
+                <table class="layui-table" lay-filter="resultTable" id="resultTable">
                     <thead>
                         <tr>
-                            <th>人员ID</th>
-                            <th>性别</th>
-                            <th>出生年份</th>
-                            <th>年龄</th>
-                            <th>总里程(公里)</th>
-                            <th>总时间(小时)</th>
+                            <th lay-data="{field:'personId', width:100}">人员ID</th>
+                            <th lay-data="{field:'genderDesc', width:80}">性别</th>
+                            <th lay-data="{field:'birthYear', width:100}">出生年份</th>
+                            <th lay-data="{field:'age', width:80}">年龄</th>
+                            <th lay-data="{field:'totalMileage', width:150, sort:true}">总里程(公里)</th>
+                            <th lay-data="{field:'totalTravelTime', width:120, sort:true}">总时间(小时)</th>
                         </tr>
                     </thead>
                     <tbody id="resultsBody">
@@ -609,9 +556,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="pagination" id="pagination">
-                <!-- 分页按钮将在这里显示 -->
-            </div>
+            <div id="pagination"></div>
         </div>
     </div>
 
@@ -624,7 +569,7 @@
 
         // 分页参数
         let currentPage = 1;
-        let pageSize = 10;
+        let pageSize = 20;
         let totalPages = 0;
         let totalCount = 0;
 
@@ -1187,12 +1132,46 @@
                     `;
                     resultsBody.insertAdjacentHTML('beforeend', row);
                 });
-            } else {
-                resultsBody.innerHTML = '<tr><td colspan="6" class="no-results">没有找到符合条件的数据</td></tr>';
-            }
 
-            // 更新分页
-            updatePagination();
+                // 使用Layui分页
+                layui.use(['laypage'], function(){
+                    const laypage = layui.laypage;
+
+                    // 渲染Layui分页
+                    laypage.render({
+                        elem: 'pagination',
+                        count: totalCount,
+                        limit: pageSize,
+                        curr: currentPage,
+                        layout: ['count', 'prev', 'page', 'next', 'limit', 'skip'],
+                        limits: [10, 20, 30, 50],
+                        jump: function(obj, first){
+                            if(!first){
+                                currentPage = obj.curr;
+                                pageSize = obj.limit;
+                                // 根据当前标签页执行对应的查询
+                                if (activeTab === 'birth-year' && currentQuery) {
+                                    currentQuery.current = currentPage;
+                                    currentQuery.size = pageSize;
+                                    executeBirthYearQuery();
+                                } else if (activeTab === 'mileage' && currentMileageQuery) {
+                                    currentMileageQuery.current = currentPage;
+                                    currentMileageQuery.size = pageSize;
+                                    executeMileageQuery();
+                                } else if (activeTab === 'travel-time' && currentTimeQuery) {
+                                    currentTimeQuery.current = currentPage;
+                                    currentTimeQuery.size = pageSize;
+                                    executeTimeQuery();
+                                }
+                            }
+                        }
+                    });
+                });
+            } else {
+                resultsBody.innerHTML = '<tr><td colspan="6" class="layui-none">没有找到符合条件的数据</td></tr>';
+                // 清空分页
+                document.getElementById('pagination').innerHTML = '';
+            }
         }
 
         // 格式化数字
@@ -1203,43 +1182,7 @@
 
         // ===== 分页功能 =====
         function updatePagination() {
-            const pagination = document.getElementById('pagination');
-            let html = '';
-
-            // 上一页按钮
-            html += `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
-
-            // 页码按钮
-            const maxVisiblePages = 5;
-            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-            if (endPage - startPage < maxVisiblePages - 1) {
-                startPage = Math.max(1, endPage - maxVisiblePages + 1);
-            }
-
-            if (startPage > 1) {
-                html += `<button class="page-btn" onclick="goToPage(1)">1</button>`;
-                if (startPage > 2) {
-                    html += `<span style="padding: 8px;">...</span>`;
-                }
-            }
-
-            for (let i = startPage; i <= endPage; i++) {
-                html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
-            }
-
-            if (endPage < totalPages) {
-                if (endPage < totalPages - 1) {
-                    html += `<span style="padding: 8px;">...</span>`;
-                }
-                html += `<button class="page-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
-            }
-
-            // 下一页按钮
-            html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}>下一页</button>`;
-
-            pagination.innerHTML = html;
+            // 分页功能已集成到displayResults中，使用Layui laypage组件
         }
 
         // 跳转到指定页
@@ -1249,8 +1192,17 @@
             }
 
             currentPage = page;
-            currentQuery.current = page;
-            await executeBirthYearQuery();
+            // 根据当前标签页执行对应的查询
+            if (activeTab === 'birth-year' && currentQuery) {
+                currentQuery.current = page;
+                await executeBirthYearQuery();
+            } else if (activeTab === 'mileage' && currentMileageQuery) {
+                currentMileageQuery.current = page;
+                await executeMileageQuery();
+            } else if (activeTab === 'travel-time' && currentTimeQuery) {
+                currentTimeQuery.current = page;
+                await executeTimeQuery();
+            }
         };
 
         // ===== 图表展示功能 =====
