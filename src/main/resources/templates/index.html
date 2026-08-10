@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QStat - 数据查询系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -365,6 +366,67 @@
         .error-message.show {
             display: block;
         }
+
+        /* 图表区域样式 */
+        .charts-section {
+            margin-top: 30px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .charts-container {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .chart-wrapper {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-wrapper h4 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .chart-wrapper canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .legend-text {
+            color: #666;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -419,15 +481,12 @@
 
         <!-- 按飞行里程查询表单 -->
         <form id="mileageForm" class="query-form">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>最小飞行里程（公里）</label>
-                    <input type="number" name="minMileage" class="form-control" placeholder="例如：1000" min="0">
+            <div class="form-group">
+                <label>里程区间设置（可添加多个区间，支持重叠）</label>
+                <div id="mileageRangesContainer">
+                    <!-- 里程区间列表将在这里动态生成 -->
                 </div>
-                <div class="form-group">
-                    <label>最大飞行里程（公里）</label>
-                    <input type="number" name="maxMileage" class="form-control" placeholder="例如：100000" min="0">
-                </div>
+                <button type="button" class="add-range-btn" id="addMileageRangeBtn">+ 添加里程区间</button>
             </div>
             <div class="form-group">
                 <label>性别（可选）</label>
@@ -450,6 +509,7 @@
                 <button type="submit" class="btn btn-primary">查询数据</button>
                 <button type="reset" class="btn btn-secondary">重置条件</button>
             </div>
+            <div class="error-message" id="mileageErrorMessage"></div>
         </form>
 
         <!-- 按飞行时间查询表单 -->
@@ -486,6 +546,33 @@
                 <button type="reset" class="btn btn-secondary">重置条件</button>
             </div>
         </form>
+
+        <!-- 图表统计区域 -->
+        <div id="chartsSection" class="charts-section" style="display: none;">
+            <div class="results-header">
+                <h3>统计图表</h3>
+            </div>
+            <div class="charts-container">
+                <div class="chart-wrapper">
+                    <h4>性别分布（饼图）</h4>
+                    <canvas id="genderPieChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <h4>里程区间分布（柱状图）</h4>
+                    <canvas id="mileageBarChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-legend">
+                <div class="legend-item">
+                    <span class="legend-color" style="background: #667eea;"></span>
+                    <span class="legend-text">男性</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background: #f472b6;"></span>
+                    <span class="legend-text">女性</span>
+                </div>
+            </div>
+        </div>
 
         <!-- 查询结果区域 -->
         <div id="resultsSection" class="results-section">
@@ -534,6 +621,11 @@
 
         // 当前查询条件（缓存）
         let currentQuery = null;
+        let currentMileageQuery = null;
+
+        // 图表实例
+        let genderPieChart = null;
+        let mileageBarChart = null;
 
         // ===== 标签页切换功能 =====
         document.querySelectorAll('.query-tab').forEach(tab => {
@@ -549,6 +641,8 @@
 
                 // 隐藏结果区域
                 hideResults();
+                // 隐藏图表区域
+                document.getElementById('chartsSection').style.display = 'none';
 
                 // 更新当前标签
                 activeTab = tabName;
@@ -598,6 +692,54 @@
         // 更新年龄段编号
         function updateRangeNumbers() {
             const ranges = ageRangesContainer.querySelectorAll('.age-range-item');
+            ranges.forEach((range, index) => {
+                range.querySelector('.range-number').textContent = (index + 1) + '.';
+            });
+        }
+
+        // ===== 里程区间管理功能 =====
+        const mileageRangesContainer = document.getElementById('mileageRangesContainer');
+        const addMileageRangeBtn = document.getElementById('addMileageRangeBtn');
+        let mileageRangeCounter = 0;
+
+        // 初始化：添加默认里程区间
+        addMileageRange(0, 10000);
+        addMileageRange(10000, 50000);
+
+        // 添加里程区间
+        addMileageRangeBtn.addEventListener('click', () => {
+            addMileageRange();
+        });
+
+        function addMileageRange(minMileage = '', maxMileage = '') {
+            mileageRangeCounter++;
+            const rangeHtml = `
+                <div class="age-range-item" data-mileage-range-id="${mileageRangeCounter}">
+                    <span class="range-number">${mileageRangeCounter}.</span>
+                    <input type="number" class="form-control min-mileage" placeholder="最小里程(公里)"
+                           value="${minMileage}" min="0" style="flex: 1;">
+                    <span>-</span>
+                    <input type="number" class="form-control max-mileage" placeholder="最大里程(公里)"
+                           value="${maxMileage}" min="0" style="flex: 1;">
+                    <span>公里</span>
+                    <button type="button" class="remove-btn" onclick="removeMileageRange(${mileageRangeCounter})">×</button>
+                </div>
+            `;
+            mileageRangesContainer.insertAdjacentHTML('beforeend', rangeHtml);
+        }
+
+        // 删除里程区间
+        window.removeMileageRange = function(rangeId) {
+            const rangeItem = document.querySelector(`[data-mileage-range-id="${rangeId}"]`);
+            if (rangeItem) {
+                rangeItem.remove();
+                updateMileageRangeNumbers();
+            }
+        };
+
+        // 更新里程区间编号
+        function updateMileageRangeNumbers() {
+            const ranges = mileageRangesContainer.querySelectorAll('.age-range-item');
             ranges.forEach((range, index) => {
                 range.querySelector('.range-number').textContent = (index + 1) + '.';
             });
@@ -701,6 +843,112 @@
             }
         }
 
+        // ===== 里程查询功能 =====
+        document.getElementById('mileageForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // 收集查询条件
+            const query = collectMileageQuery();
+
+            // 验证
+            const validation = validateMileageQuery(query);
+            if (!validation.valid) {
+                showMileageError(validation.message);
+                return;
+            }
+
+            hideMileageError();
+
+            // 执行查询
+            currentMileageQuery = query;
+            currentPage = 1;
+            await executeMileageQuery();
+        });
+
+        // 收集里程查询条件
+        function collectMileageQuery() {
+            const mileageRanges = [];
+            const rangeItems = mileageRangesContainer.querySelectorAll('.age-range-item');
+
+            rangeItems.forEach(item => {
+                const minMileage = item.querySelector('.min-mileage').value;
+                const maxMileage = item.querySelector('.max-mileage').value;
+
+                if (minMileage !== '' || maxMileage !== '') {
+                    mileageRanges.push({
+                        minMileage: minMileage !== '' ? parseInt(minMileage) : null,
+                        maxMileage: maxMileage !== '' ? parseInt(maxMileage) : null
+                    });
+                }
+            });
+
+            const genderInput = document.querySelector('#mileageForm input[name="gender"]:checked');
+            const gender = genderInput && genderInput.value !== '' ? parseInt(genderInput.value) : null;
+
+            return {
+                mileageRanges: mileageRanges,
+                gender: gender,
+                current: currentPage,
+                size: pageSize
+            };
+        }
+
+        // 验证里程查询条件
+        function validateMileageQuery(query) {
+            if (!query.mileageRanges || query.mileageRanges.length === 0) {
+                return { valid: false, message: '请至少设置一个里程区间' };
+            }
+
+            for (let i = 0; i < query.mileageRanges.length; i++) {
+                const range = query.mileageRanges[i];
+                if (range.minMileage !== null && range.minMileage < 0) {
+                    return { valid: false, message: `里程区间 ${i + 1} 的最小里程不能为负数` };
+                }
+                if (range.maxMileage !== null && range.maxMileage < 0) {
+                    return { valid: false, message: `里程区间 ${i + 1} 的最大里程不能为负数` };
+                }
+                if (range.minMileage !== null && range.maxMileage !== null && range.minMileage > range.maxMileage) {
+                    return { valid: false, message: `里程区间 ${i + 1} 的最小里程不能大于最大里程` };
+                }
+            }
+
+            return { valid: true };
+        }
+
+        // 执行里程查询
+        async function executeMileageQuery() {
+            showLoading();
+
+            try {
+                // 同时查询数据和统计
+                const [dataResponse, statsResponse] = await Promise.all([
+                    fetch(`${API_BASE}/query/mileage/page`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(currentMileageQuery)
+                    }),
+                    fetch(`${API_BASE}/query/mileage/statistics`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(currentMileageQuery)
+                    })
+                ]);
+
+                const dataResult = await dataResponse.json();
+                const statsResult = await statsResponse.json();
+
+                if (dataResult.code === 200 && statsResult.code === 200) {
+                    displayResults(dataResult.data);
+                    displayCharts(statsResult.data);
+                } else {
+                    showError(dataResult.message || statsResult.message || '查询失败，请稍后重试');
+                }
+            } catch (error) {
+                console.error('查询失败:', error);
+                showError('网络错误，请检查连接后重试');
+            }
+        }
+
         // ===== 结果展示功能 =====
         function displayResults(data) {
             hideLoading();
@@ -724,7 +972,7 @@
                 data.records.forEach(record => {
                     const row = `
                         <tr>
-                            <td>${record.personIc || '-'}</td>
+                            <td>${record.personId || '-'}</td>
                             <td>${record.genderDesc || '-'}</td>
                             <td>${record.birthYear || '-'}</td>
                             <td>${record.age || '-'}</td>
@@ -800,6 +1048,141 @@
             await executeBirthYearQuery();
         };
 
+        // ===== 图表展示功能 =====
+        function displayCharts(stats) {
+            const chartsSection = document.getElementById('chartsSection');
+            chartsSection.style.display = 'block';
+
+            // 性别饼图
+            renderGenderPieChart(stats.genderStats);
+
+            // 里程区间柱状图
+            renderMileageBarChart(stats.mileageRangeStats);
+        }
+
+        function renderGenderPieChart(genderStats) {
+            const ctx = document.getElementById('genderPieChart').getContext('2d');
+
+            // 销毁旧图表
+            if (genderPieChart) {
+                genderPieChart.destroy();
+            }
+
+            const labels = genderStats.map(s => s.genderDesc);
+            const data = genderStats.map(s => s.count);
+            const colors = ['#667eea', '#f472b6'];
+
+            genderPieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: { size: 14 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value}人 (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderMileageBarChart(mileageStats) {
+            const ctx = document.getElementById('mileageBarChart').getContext('2d');
+
+            // 销毁旧图表
+            if (mileageBarChart) {
+                mileageBarChart.destroy();
+            }
+
+            const labels = mileageStats.map(s => s.rangeName);
+            const data = mileageStats.map(s => s.count);
+
+            mileageBarChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '人数',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(244, 114, 182, 0.8)',
+                            'rgba(52, 211, 153, 0.8)',
+                            'rgba(251, 146, 60, 0.8)',
+                            'rgba(139, 92, 246, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgb(102, 126, 234)',
+                            'rgb(244, 114, 182)',
+                            'rgb(52, 211, 153)',
+                            'rgb(251, 146, 60)',
+                            'rgb(139, 92, 246)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.y || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return `人数: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            },
+                            title: {
+                                display: true,
+                                text: '人数'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         // ===== 辅助功能 =====
         function showLoading() {
             const resultsSection = document.getElementById('resultsSection');
@@ -826,6 +1209,16 @@
             document.getElementById('errorMessage').classList.remove('show');
         }
 
+        function showMileageError(message) {
+            const errorDiv = document.getElementById('mileageErrorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        function hideMileageError() {
+            document.getElementById('mileageErrorMessage').classList.remove('show');
+        }
+
         // ===== 重置功能 =====
         document.querySelectorAll('form').forEach(form => {
             form.addEventListener('reset', function() {
@@ -837,8 +1230,18 @@
                         addAgeRange(10, 20);
                         addAgeRange(18, 25);
                     }
+                    if (this.id === 'mileageForm') {
+                        // 重置里程区间为默认状态
+                        mileageRangesContainer.innerHTML = '';
+                        mileageRangeCounter = 0;
+                        addMileageRange(0, 10000);
+                        addMileageRange(10000, 50000);
+                    }
                     hideResults();
                     hideError();
+                    hideMileageError();
+                    // 隐藏图表
+                    document.getElementById('chartsSection').style.display = 'none';
                 }, 0);
             });
         });
