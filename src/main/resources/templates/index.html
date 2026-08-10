@@ -7,8 +7,8 @@
     <!-- Layui框架 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.6/dist/css/layui.css">
     <script src="https://cdn.jsdelivr.net/npm/layui@2.9.6/dist/layui.js"></script>
-    <!-- Chart.js图表库 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Echarts图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -581,11 +581,10 @@
         let currentMileageQuery = null;
         let currentTimeQuery = null;
 
-        // 图表实例
+        // 图表实例（Echarts）
         let distributionBarChart = null;
         let ageRangePieChart = null;
         let mileageRangePieChart = null;
-        let timeRangePieChart = null;
         let timeLineChart = null;
 
         // ===== 标签页切换功能 =====
@@ -1235,20 +1234,16 @@
         }
 
         function renderAgeRangePieChart(ageRangeStats) {
-            const ctx = document.getElementById('ageRangePieChart').getContext('2d');
+            const chartDom = document.getElementById('ageRangePieChart');
 
             // 销毁旧图表
             if (ageRangePieChart) {
-                ageRangePieChart.destroy();
+                ageRangePieChart.dispose();
             }
 
             // 检查空数据
             if (!ageRangeStats || ageRangeStats.length === 0) {
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                ctx.font = '14px Arial';
-                ctx.fillStyle = '#999';
-                ctx.textAlign = 'center';
-                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                chartDom.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无数据</div>';
                 return;
             }
 
@@ -1261,58 +1256,79 @@
                 '#06b6d4', '#f59e0b', '#ef4444', '#84cc16', '#6366f1'
             ];
 
-            ageRangePieChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: colors.slice(0, labels.length),
-                        borderWidth: 2,
-                        borderColor: '#fff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                font: { size: 14 }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                    return `${label}: ${value}人 (${percentage}%)`;
-                                }
-                            }
-                        }
+            // 初始化Echarts实例
+            ageRangePieChart = echarts.init(chartDom);
+
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        const percentage = params.percent;
+                        return `${params.name}: ${params.value}人 (${percentage}%)`;
                     }
-                }
+                },
+                legend: {
+                    bottom: 10,
+                    left: 'center',
+                    itemWidth: 12,
+                    itemHeight: 12,
+                    textStyle: {
+                        fontSize: 14
+                    }
+                },
+                series: [{
+                    type: 'pie',
+                    radius: ['35%', '65%'],
+                    center: ['50%', '45%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 8,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: false,
+                        position: 'center'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: 18,
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    data: labels.map((label, index) => ({
+                        value: data[index],
+                        name: label,
+                        itemStyle: {
+                            color: colors[index % colors.length]
+                        }
+                    }))
+                }]
+            };
+
+            ageRangePieChart.setOption(option);
+
+            // 响应式调整
+            window.addEventListener('resize', function() {
+                ageRangePieChart && ageRangePieChart.resize();
             });
         }
 
         function renderMileageRangePieChart(mileageRangeStats) {
-            const ctx = document.getElementById('mileageRangePieChart').getContext('2d');
+            const chartDom = document.getElementById('mileageRangePieChart');
 
             // 销毁旧图表
             if (mileageRangePieChart) {
-                mileageRangePieChart.destroy();
+                mileageRangePieChart.dispose();
             }
 
             // 检查空数据
             if (!mileageRangeStats || mileageRangeStats.length === 0) {
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                ctx.font = '14px Arial';
-                ctx.fillStyle = '#999';
-                ctx.textAlign = 'center';
-                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                chartDom.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无数据</div>';
                 return;
             }
 
@@ -1325,197 +1341,74 @@
                 '#06b6d4', '#f59e0b', '#ef4444', '#84cc16', '#6366f1'
             ];
 
-            mileageRangePieChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: colors.slice(0, labels.length),
-                        borderWidth: 2,
-                        borderColor: '#fff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                font: { size: 14 }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                    return `${label}: ${value}人 (${percentage}%)`;
-                                }
-                            }
-                        }
+            // 初始化Echarts实例
+            mileageRangePieChart = echarts.init(chartDom);
+
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        const percentage = params.percent;
+                        return `${params.name}: ${params.value}人 (${percentage}%)`;
                     }
-                }
-            });
-        }
-
-        function renderTimeRangePieChart(timeRangeStats) {
-            const ctx = document.getElementById('timeRangePieChart').getContext('2d');
-
-            // 销毁旧图表
-            if (timeRangePieChart) {
-                timeRangePieChart.destroy();
-            }
-
-            // 检查空数据
-            if (!timeRangeStats || timeRangeStats.length === 0) {
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                ctx.font = '14px Arial';
-                ctx.fillStyle = '#999';
-                ctx.textAlign = 'center';
-                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
-                return;
-            }
-
-            const labels = timeRangeStats.map(s => s.rangeName || `${s.minTravelTime}-${s.maxTravelTime}小时`);
-            const data = timeRangeStats.map(s => s.count);
-
-            // 使用多种颜色区分不同时间区间
-            const colors = [
-                '#667eea', '#f472b6', '#34d399', '#fb923c', '#8b5cf6',
-                '#06b6d4', '#f59e0b', '#ef4444', '#84cc16', '#6366f1'
-            ];
-
-            timeRangePieChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: colors.slice(0, labels.length),
-                        borderWidth: 2,
-                        borderColor: '#fff'
-                    }]
                 },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                font: { size: 14 }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                    return `${label}: ${value}人 (${percentage}%)`;
-                                }
-                            }
-                        }
+                legend: {
+                    bottom: 10,
+                    left: 'center',
+                    itemWidth: 12,
+                    itemHeight: 12,
+                    textStyle: {
+                        fontSize: 14
                     }
-                }
-            });
-        }
-
-        function renderMileageBarChart(mileageStats) {
-            const ctx = document.getElementById('mileageBarChart').getContext('2d');
-
-            // 销毁旧图表
-            if (mileageBarChart) {
-                mileageBarChart.destroy();
-            }
-
-            // 检查空数据
-            if (!mileageStats || mileageStats.length === 0) {
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                ctx.font = '14px Arial';
-                ctx.fillStyle = '#999';
-                ctx.textAlign = 'center';
-                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
-                return;
-            }
-
-            const labels = mileageStats.map(s => s.rangeName);
-            const data = mileageStats.map(s => s.count);
-
-            mileageBarChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: '人数',
-                        data: data,
-                        backgroundColor: [
-                            'rgba(102, 126, 234, 0.8)',
-                            'rgba(244, 114, 182, 0.8)',
-                            'rgba(52, 211, 153, 0.8)',
-                            'rgba(251, 146, 60, 0.8)',
-                            'rgba(139, 92, 246, 0.8)'
-                        ],
-                        borderColor: [
-                            'rgb(102, 126, 234)',
-                            'rgb(244, 114, 182)',
-                            'rgb(52, 211, 153)',
-                            'rgb(251, 146, 60)',
-                            'rgb(139, 92, 246)'
-                        ],
+                },
+                series: [{
+                    type: 'pie',
+                    radius: ['35%', '65%'],
+                    center: ['50%', '45%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 8,
+                        borderColor: '#fff',
                         borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const value = context.parsed.y || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                    return `人数: ${value} (${percentage}%)`;
-                                }
-                            }
+                    },
+                    label: {
+                        show: false,
+                        position: 'center'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: 18,
+                            fontWeight: 'bold'
                         }
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            },
-                            title: {
-                                display: true,
-                                text: '人数'
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45
-                            }
+                    labelLine: {
+                        show: false
+                    },
+                    data: labels.map((label, index) => ({
+                        value: data[index],
+                        name: label,
+                        itemStyle: {
+                            color: colors[index % colors.length]
                         }
-                    }
-                }
+                    }))
+                }]
+            };
+
+            mileageRangePieChart.setOption(option);
+
+            // 响应式调整
+            window.addEventListener('resize', function() {
+                mileageRangePieChart && mileageRangePieChart.resize();
             });
         }
 
         function renderDistributionBarChart(stats, title) {
-            const ctx = document.getElementById('distributionBarChart').getContext('2d');
+            const chartDom = document.getElementById('distributionBarChart');
 
             // 销毁旧图表
             if (distributionBarChart) {
-                distributionBarChart.destroy();
+                distributionBarChart.dispose();
             }
 
             // 更新标题
@@ -1523,19 +1416,83 @@
 
             // 检查空数据
             if (!stats || stats.length === 0) {
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                ctx.font = '14px Arial';
-                ctx.fillStyle = '#999';
-                ctx.textAlign = 'center';
-                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                chartDom.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无数据</div>';
                 return;
             }
 
             const labels = stats.map(s => s.rangeName);
             const data = stats.map(s => s.count);
 
-            distributionBarChart = new Chart(ctx, {
-                type: 'bar',
+            // 初始化Echarts实例
+            distributionBarChart = echarts.init(chartDom);
+
+            const colors = ['#667eea', '#f472b6', '#34d399', '#fb923c', '#8b5cf6'];
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    },
+                    formatter: function(params) {
+                        const item = params[0];
+                        const total = data.reduce((a, b) => a + b, 0);
+                        const percentage = total > 0 ? ((item.value / total) * 100).toFixed(1) : 0;
+                        return `${item.name}<br/>人数: ${item.value} (${percentage}%)`;
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: labels,
+                    axisLabel: {
+                        interval: 0,
+                        rotate: 45,
+                        fontSize: 12
+                    },
+                    axisTick: {
+                        alignWithLabel: true
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '人数',
+                    axisLabel: {
+                        formatter: '{value}'
+                    },
+                    minInterval: 1
+                },
+                series: [{
+                    name: '人数',
+                    type: 'bar',
+                    barWidth: '60%',
+                    data: data.map((value, index) => ({
+                        value: value,
+                        itemStyle: {
+                            color: colors[index % colors.length],
+                            borderRadius: [4, 4, 0, 0]
+                        }
+                    })),
+                    label: {
+                        show: true,
+                        position: 'top',
+                        formatter: '{c}'
+                    }
+                }]
+            };
+
+            distributionBarChart.setOption(option);
+
+            // 响应式调整
+            window.addEventListener('resize', function() {
+                distributionBarChart && distributionBarChart.resize();
+            });
+        }
                 data: {
                     labels: labels,
                     datasets: [{
@@ -1618,20 +1575,16 @@
         }
 
         function renderTimeLineChart(timeRangeStats) {
-            const ctx = document.getElementById('timeLineChart').getContext('2d');
+            const chartDom = document.getElementById('timeLineChart');
 
             // 销毁旧图表
             if (timeLineChart) {
-                timeLineChart.destroy();
+                timeLineChart.dispose();
             }
 
             // 检查空数据
             if (!timeRangeStats || timeRangeStats.length === 0) {
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                ctx.font = '14px Arial';
-                ctx.fillStyle = '#999';
-                ctx.textAlign = 'center';
-                ctx.fillText('暂无数据', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                chartDom.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无数据</div>';
                 return;
             }
 
@@ -1647,81 +1600,106 @@
             // 纵坐标：人数
             const countData = sortedData.map(s => s.count);
 
-            timeLineChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: '人数',
-                        data: countData,
-                        borderColor: 'rgb(102, 126, 234)',
-                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
-                        tension: 0.3,
-                        fill: true,
-                        pointBackgroundColor: 'rgb(102, 126, 234)',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 6,
-                        pointHoverRadius: 8
-                    }]
+            // 初始化Echarts实例
+            timeLineChart = echarts.init(chartDom);
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        const item = params[0];
+                        return `${item.name}<br/>人数: ${item.value}人`;
+                    }
                 },
-                options: {
-                    responsive: true,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: labels,
+                    name: '时间区间（小时）',
+                    nameLocation: 'middle',
+                    nameGap: 30,
+                    axisLabel: {
+                        interval: 0,
+                        rotate: 45,
+                        fontSize: 12
                     },
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                font: { size: 14 }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const value = context.parsed.y || 0;
-                                    return `人数: ${value}人`;
-                                }
-                            }
-                        }
+                    boundaryGap: false
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '人数',
+                    nameLocation: 'end',
+                    axisLabel: {
+                        formatter: '{value}人'
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1,
-                                callback: function(value) {
-                                    return value + '人';
-                                }
-                            },
-                            title: {
-                                display: true,
-                                text: '人数',
-                                font: {
-                                    size: 14,
-                                    weight: 'bold'
-                                }
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: '时间区间（小时）',
-                                font: {
-                                    size: 14,
-                                    weight: 'bold'
-                                }
-                            },
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45
-                            }
+                    minInterval: 1,
+                    splitLine: {
+                        lineStyle: {
+                            type: 'dashed'
                         }
                     }
-                }
+                },
+                series: [{
+                    name: '人数',
+                    type: 'line',
+                    smooth: true,
+                    data: countData,
+                    lineStyle: {
+                        color: '#667eea',
+                        width: 3
+                    },
+                    areaStyle: {
+                        color: {
+                            type: 'linear',
+                            x: 0,
+                            y: 0,
+                            x2: 0,
+                            y2: 1,
+                            colorStops: [{
+                                offset: 0,
+                                color: 'rgba(102, 126, 234, 0.3)'
+                            }, {
+                                offset: 1,
+                                color: 'rgba(102, 126, 234, 0.05)'
+                            }]
+                        }
+                    },
+                    itemStyle: {
+                        color: '#667eea',
+                        borderColor: '#fff',
+                        borderWidth: 2,
+                        borderRadius: 8
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            color: '#667eea',
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(102, 126, 234, 0.5)'
+                        }
+                    },
+                    symbol: 'circle',
+                    symbolSize: 8,
+                    label: {
+                        show: true,
+                        position: 'top',
+                        formatter: '{c}',
+                        color: '#667eea'
+                    }
+                }]
+            };
+
+            timeLineChart.setOption(option);
+
+            // 响应式调整
+            window.addEventListener('resize', function() {
+                timeLineChart && timeLineChart.resize();
             });
         }
 
