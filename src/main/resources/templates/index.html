@@ -345,9 +345,9 @@
             font-size: 16px;
         }
 
-        .chart-wrapper canvas {
-            max-width: 100%;
-            height: auto;
+        .chart-wrapper > div[id*="Chart"] {
+            width: 100%;
+            height: 300px;
         }
 
         .chart-legend {
@@ -500,35 +500,35 @@
             <div class="charts-container">
                 <div class="chart-wrapper" style="flex: 1; min-width: 100%;">
                     <h4 id="distributionChartTitle">区间分布（柱状图）</h4>
-                    <canvas id="distributionBarChart"></canvas>
+                    <div id="distributionBarChart" style="width: 100%; height: 300px;"></div>
                 </div>
             </div>
             <!-- 年龄段分布饼图容器（仅出生年份查询显示） -->
             <div class="charts-container" id="ageRangePieContainer" style="display: none;">
                 <div class="chart-wrapper" style="flex: 1; min-width: 100%;">
                     <h4>年龄段分布（饼图）</h4>
-                    <canvas id="ageRangePieChart"></canvas>
+                    <div id="ageRangePieChart" style="width: 100%; height: 300px;"></div>
                 </div>
             </div>
             <!-- 里程区间分布饼图容器（仅里程查询显示） -->
             <div class="charts-container" id="mileageRangePieContainer" style="display: none;">
                 <div class="chart-wrapper" style="flex: 1; min-width: 100%;">
                     <h4>里程区间分布（饼图）</h4>
-                    <canvas id="mileageRangePieChart"></canvas>
+                    <div id="mileageRangePieChart" style="width: 100%; height: 300px;"></div>
                 </div>
             </div>
             <!-- 时间区间分布饼图容器（仅时间查询显示） -->
             <div class="charts-container" id="timeRangePieContainer" style="display: none;">
                 <div class="chart-wrapper" style="flex: 1; min-width: 100%;">
                     <h4>时间区间分布（饼图）</h4>
-                    <canvas id="timeRangePieChart"></canvas>
+                    <div id="timeRangePieChart" style="width: 100%; height: 300px;"></div>
                 </div>
             </div>
             <!-- 时间查询专用的折线图 -->
             <div class="charts-container" id="lineChartContainer" style="display: none;">
                 <div class="chart-wrapper" style="flex: 1; min-width: 100%;">
                     <h4>时间区间人数分布（折线图）</h4>
-                    <canvas id="timeLineChart"></canvas>
+                    <div id="timeLineChart" style="width: 100%; height: 300px;"></div>
                 </div>
             </div>
         </div>
