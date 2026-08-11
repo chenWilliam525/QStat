@@ -241,6 +241,29 @@
             background: #e0e0e0;
         }
 
+        .template-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn-save {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #218838;
+        }
+
+        .btn-load {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-load:hover {
+            background: #138496;
+        }
+
         .results-section {
             margin-top: 40px;
             padding-top: 30px;
@@ -418,6 +441,11 @@
                 </div>
             </div>
 
+            <div class="template-actions" style="margin-top: 20px;">
+                <button type="button" class="btn btn-save" id="saveBirthYearTemplate">💾 保存当前配置</button>
+                <button type="button" class="btn btn-load" id="loadBirthYearTemplate">📂 加载已存配置</button>
+            </div>
+
             <div class="btn-group">
                 <button type="submit" class="btn btn-primary">查询数据</button>
                 <button type="reset" class="btn btn-secondary">重置条件</button>
@@ -452,6 +480,11 @@
                     </div>
                 </div>
             </div>
+            <div class="template-actions" style="margin-top: 20px;">
+                <button type="button" class="btn btn-save" id="saveMileageTemplate">💾 保存当前配置</button>
+                <button type="button" class="btn btn-load" id="loadMileageTemplate">📂 加载已存配置</button>
+            </div>
+
             <div class="btn-group">
                 <button type="submit" class="btn btn-primary">查询数据</button>
                 <button type="reset" class="btn btn-secondary">重置条件</button>
@@ -485,6 +518,11 @@
                     </div>
                 </div>
             </div>
+            <div class="template-actions" style="margin-top: 20px;">
+                <button type="button" class="btn btn-save" id="saveTravelTimeTemplate">💾 保存当前配置</button>
+                <button type="button" class="btn btn-load" id="loadTravelTimeTemplate">📂 加载已存配置</button>
+            </div>
+
             <div class="btn-group">
                 <button type="submit" class="btn btn-primary">查询数据</button>
                 <button type="reset" class="btn btn-secondary">重置条件</button>
@@ -1734,6 +1772,298 @@
         });
 
         console.log('QStat 查询系统已加载完成！');
+
+        // ===== 查询区间保存/加载功能 =====
+
+        // 当前正在保存的配置类型
+        let currentSaveConfigType = null;
+
+        // ===== 出生年份配置保存功能 =====
+        document.getElementById('saveBirthYearTemplate').addEventListener('click', async function() {
+            currentSaveConfigType = 'birth-year';
+            const templateName = prompt('请输入模板名称：');
+            if (!templateName || !templateName.trim()) {
+                alert('请输入模板名称');
+                return;
+            }
+
+            const query = collectBirthYearQuery();
+            const request = {
+                templateName: templateName.trim(),
+                queryType: 'birth-year',
+                ranges: query.ageRanges,
+                gender: query.gender
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/query-template`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(request)
+                });
+                const result = await response.json();
+                if (result.code === 200) {
+                    alert('保存成功！');
+                } else {
+                    alert(result.message || '保存失败');
+                }
+            } catch (error) {
+                alert('保存失败：' + error.message);
+            }
+        });
+
+        // 加载出生年份模板
+        document.getElementById('loadBirthYearTemplate').addEventListener('click', async function() {
+            try {
+                const response = await fetch(`${API_BASE}/query-template/list/birth-year`);
+                const result = await response.json();
+
+                if (result.code !== 200 || !result.data || result.data.length === 0) {
+                    alert('暂无已保存的配置');
+                    return;
+                }
+
+                // 显示模板选择列表（使用 Layui 弹窗）
+                showTemplateSelectionDialog(result.data, 'birth-year');
+            } catch (error) {
+                alert('加载失败：' + error.message);
+            }
+        });
+
+        // ===== 里程配置保存功能 =====
+        document.getElementById('saveMileageTemplate').addEventListener('click', async function() {
+            currentSaveConfigType = 'mileage';
+            const templateName = prompt('请输入模板名称：');
+            if (!templateName || !templateName.trim()) {
+                alert('请输入模板名称');
+                return;
+            }
+
+            const query = collectMileageQuery();
+            const request = {
+                templateName: templateName.trim(),
+                queryType: 'mileage',
+                ranges: query.mileageRanges,
+                gender: query.gender
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/query-template`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(request)
+                });
+                const result = await response.json();
+                if (result.code === 200) {
+                    alert('保存成功！');
+                } else {
+                    alert(result.message || '保存失败');
+                }
+            } catch (error) {
+                alert('保存失败：' + error.message);
+            }
+        });
+
+        // 加载里程模板
+        document.getElementById('loadMileageTemplate').addEventListener('click', async function() {
+            try {
+                const response = await fetch(`${API_BASE}/query-template/list/mileage`);
+                const result = await response.json();
+
+                if (result.code !== 200 || !result.data || result.data.length === 0) {
+                    alert('暂无已保存的配置');
+                    return;
+                }
+
+                showTemplateSelectionDialog(result.data, 'mileage');
+            } catch (error) {
+                alert('加载失败：' + error.message);
+            }
+        });
+
+        // ===== 时间配置保存功能 =====
+        document.getElementById('saveTravelTimeTemplate').addEventListener('click', async function() {
+            currentSaveConfigType = 'travel-time';
+            const templateName = prompt('请输入模板名称：');
+            if (!templateName || !templateName.trim()) {
+                alert('请输入模板名称');
+                return;
+            }
+
+            const query = collectTimeQuery();
+            const request = {
+                templateName: templateName.trim(),
+                queryType: 'travel-time',
+                ranges: query.timeRanges,
+                gender: query.gender
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/query-template`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(request)
+                });
+                const result = await response.json();
+                if (result.code === 200) {
+                    alert('保存成功！');
+                } else {
+                    alert(result.message || '保存失败');
+                }
+            } catch (error) {
+                alert('保存失败：' + error.message);
+            }
+        });
+
+        // 加载时间模板
+        document.getElementById('loadTravelTimeTemplate').addEventListener('click', async function() {
+            try {
+                const response = await fetch(`${API_BASE}/query-template/list/travel-time`);
+                const result = await response.json();
+
+                if (result.code !== 200 || !result.data || result.data.length === 0) {
+                    alert('暂无已保存的配置');
+                    return;
+                }
+
+                showTemplateSelectionDialog(result.data, 'travel-time');
+            } catch (error) {
+                alert('加载失败：' + error.message);
+            }
+        });
+
+        // 显示模板选择对话框
+        function showTemplateSelectionDialog(templates, queryType) {
+            const options = templates.map(t =>
+                `<option value="${t.id}">${t.templateName} (${formatTime(t.createTime)})</option>`
+            ).join('');
+
+            const html = `
+                <div style="padding: 20px;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 8px;">选择要加载的配置：</label>
+                        <select id="templateSelect" class="form-control" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                            <option value="">-- 请选择模板 --</option>
+                            ${options}
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn btn-primary" onclick="applySelectedTemplate('${queryType}')" style="flex: 1;">应用</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeTemplateDialog()" style="flex: 1;">取消</button>
+                    </div>
+                </div>
+            `;
+
+            layui.layer.open({
+                type: 1,
+                title: '选择要加载的配置',
+                content: html,
+                area: ['400px', '250px']
+            });
+        }
+
+        // 关闭模板选择对话框
+        window.closeTemplateDialog = function() {
+            layui.layer.closeAll();
+        };
+
+        // 应用选中的模板
+        window.applySelectedTemplate = async function(queryType) {
+            const select = document.getElementById('templateSelect');
+            const templateId = select.value;
+
+            if (!templateId) {
+                alert('请选择模板');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/query-template/${templateId}`);
+                const result = await response.json();
+
+                if (result.code === 200 && result.data) {
+                    loadTemplateToForm(result.data, queryType);
+                    layui.layer.closeAll();
+                    layui.layer.msg('配置加载成功！', {icon: 1});
+                } else {
+                    alert('加载模板详情失败');
+                }
+            } catch (error) {
+                alert('加载失败：' + error.message);
+            }
+        };
+
+        // 将模板加载到表单
+        function loadTemplateToForm(template, queryType) {
+            const ranges = JSON.parse(template.rangesJson);
+            const gender = template.gender;
+
+            if (queryType === 'birth-year') {
+                // 清空现有年龄段
+                ageRangesContainer.innerHTML = '';
+                ageRangeCounter = 0;
+
+                // 添加保存的年龄段
+                if (ranges && ranges.length > 0) {
+                    ranges.forEach(range => {
+                        addAgeRange(range.minAge, range.maxAge);
+                    });
+                }
+
+                // 设置性别
+                const genderRadios = document.querySelectorAll('#birthYearForm input[name="gender"]');
+                genderRadios.forEach(radio => {
+                    radio.checked = (radio.value === '' && gender === null) ||
+                                   (radio.value === String(gender));
+                });
+            } else if (queryType === 'mileage') {
+                // 清空现有里程区间
+                mileageRangesContainer.innerHTML = '';
+                mileageRangeCounter = 0;
+
+                // 添加保存的里程区间
+                if (ranges && ranges.length > 0) {
+                    ranges.forEach(range => {
+                        addMileageRange(range.minMileage, range.maxMileage);
+                    });
+                }
+
+                // 设置性别
+                const genderRadios = document.querySelectorAll('#mileageForm input[name="gender"]');
+                genderRadios.forEach(radio => {
+                    radio.checked = (radio.value === '' && gender === null) ||
+                                   (radio.value === String(gender));
+                });
+            } else if (queryType === 'travel-time') {
+                // 清空现有时间区间
+                timeRangesContainer.innerHTML = '';
+                timeRangeCounter = 0;
+
+                // 添加保存的时间区间
+                if (ranges && ranges.length > 0) {
+                    ranges.forEach(range => {
+                        addTimeRange(range.minTravelTime, range.maxTravelTime);
+                    });
+                }
+
+                // 设置性别
+                const genderRadios = document.querySelectorAll('#travelTimeForm input[name="gender"]');
+                genderRadios.forEach(radio => {
+                    radio.checked = (radio.value === '' && gender === null) ||
+                                   (radio.value === String(gender));
+                });
+            }
+
+            // 隐藏结果区域
+            hideResults();
+        }
+
+        // 时间格式化辅助函数
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            return date.toLocaleString('zh-CN');
+        }
     </script>
 </body>
 </html>
