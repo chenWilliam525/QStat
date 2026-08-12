@@ -1947,8 +1947,11 @@
                             ${options}
                         </select>
                     </div>
-                    <div style="display: flex; gap: 10px;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                         <button type="button" class="btn btn-primary" onclick="applySelectedTemplate('${queryType}')" style="flex: 1;">应用</button>
+                        <button type="button" class="btn btn-secondary" onclick="deleteSelectedTemplate('${queryType}')" style="flex: 1;">删除</button>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
                         <button type="button" class="btn btn-secondary" onclick="closeTemplateDialog()" style="flex: 1;">取消</button>
                     </div>
                 </div>
@@ -1958,7 +1961,7 @@
                 type: 1,
                 title: '选择要加载的配置',
                 content: html,
-                area: ['400px', '250px']
+                area: ['400px', '280px']
             });
         }
 
@@ -1990,6 +1993,49 @@
                 }
             } catch (error) {
                 alert('加载失败：' + error.message);
+            }
+        };
+
+        // 删除选中的模板
+        window.deleteSelectedTemplate = async function(queryType) {
+            const select = document.getElementById('templateSelect');
+            const templateId = select.value;
+            const templateName = select.options[select.selectedIndex]?.text || '';
+
+            if (!templateId) {
+                alert('请选择要删除的模板');
+                return;
+            }
+
+            // 确认删除
+            if (!confirm(`确定要删除配置「${templateName}」吗？`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/query-template/${templateId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+
+                if (result.code === 200) {
+                    layui.layer.closeAll();
+                    layui.layer.msg('删除成功！', {icon: 1});
+                    // 刷新模板列表
+                    setTimeout(() => {
+                        if (queryType === 'birth-year') {
+                            document.getElementById('loadBirthYearTemplate').click();
+                        } else if (queryType === 'mileage') {
+                            document.getElementById('loadMileageTemplate').click();
+                        } else if (queryType === 'travel-time') {
+                            document.getElementById('loadTravelTimeTemplate').click();
+                        }
+                    }, 500);
+                } else {
+                    alert(result.message || '删除失败');
+                }
+            } catch (error) {
+                alert('删除失败：' + error.message);
             }
         };
 
