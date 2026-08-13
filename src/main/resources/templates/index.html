@@ -397,6 +397,44 @@
             color: #666;
             font-size: 14px;
         }
+
+        /* 区间分组结果样式 */
+        .range-results-section {
+            margin-top: 30px;
+        }
+
+        .range-result-group {
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .range-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .range-result-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .range-result-count {
+            font-size: 14px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .range-result-table-container {
+            overflow-x: auto;
+        }
     </style>
 </head>
 <body>
@@ -571,30 +609,15 @@
             </div>
         </div>
 
-        <!-- 查询结果区域 -->
+        <!-- 查询结果区域 - 按区间分组展示 -->
         <div id="resultsSection" class="results-section">
             <div class="results-header">
                 <h3>查询结果</h3>
-                <span class="results-count">共找到 <strong id="resultCount">0</strong> 条记录</span>
+                <span class="results-count">共 <strong id="resultCount">0</strong> 个区间</span>
             </div>
-            <div class="table-container">
-                <table class="layui-table" lay-filter="resultTable" id="resultTable">
-                    <thead>
-                        <tr>
-                            <th lay-data="{field:'personId', width:100}">人员ID</th>
-                            <th lay-data="{field:'genderDesc', width:80}">性别</th>
-                            <th lay-data="{field:'birthYear', width:100}">出生年份</th>
-                            <th lay-data="{field:'age', width:80}">年龄</th>
-                            <th lay-data="{field:'totalMileage', width:150, sort:true}">总里程(公里)</th>
-                            <th lay-data="{field:'totalTravelTime', width:120, sort:true}">总时间(小时)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resultsBody">
-                        <!-- 查询结果将在这里显示 -->
-                    </tbody>
-                </table>
+            <div id="rangeResultsContainer" class="range-results-section">
+                <!-- 各区间的结果表格将在这里动态生成 -->
             </div>
-            <div id="pagination"></div>
         </div>
     </div>
 
@@ -624,6 +647,9 @@
         let ageRangePieChart = null;
         let mileageRangePieChart = null;
         let timeLineChart = null;
+
+        // 区间分组数据存储（每个区间独立的数据和分页状态）
+        let rangeGroupData = [];
 
         // ===== 标签页切换功能 =====
         // 标签页名称到表单ID的映射
@@ -894,7 +920,8 @@
                 const statsResult = await statsResponse.json();
 
                 if (dataResult.code === 200 && statsResult.code === 200) {
-                    displayResults(dataResult.data);
+                    // 按区间分组展示结果
+                    await displayRangeResults('birth-year', currentQuery);
                     displayCharts(statsResult.data);
                 } else {
                     showError(dataResult.message || statsResult.message || '查询失败，请稍后重试');
@@ -1000,7 +1027,8 @@
                 const statsResult = await statsResponse.json();
 
                 if (dataResult.code === 200 && statsResult.code === 200) {
-                    displayResults(dataResult.data);
+                    // 按区间分组展示结果
+                    await displayRangeResults('mileage', currentMileageQuery);
                     displayCharts(statsResult.data);
                 } else {
                     showError(dataResult.message || statsResult.message || '查询失败，请稍后重试');
@@ -1125,7 +1153,8 @@
                 const statsResult = await statsResponse.json();
 
                 if (dataResult.code === 200 && statsResult.code === 200) {
-                    displayResults(dataResult.data);
+                    // 按区间分组展示结果
+                    await displayRangeResults('travel-time', currentTimeQuery);
                     displayTimeCharts(statsResult.data);
                 } else {
                     showError(dataResult.message || statsResult.message || '查询失败，请稍后重试');
@@ -1685,8 +1714,9 @@
         function showLoading() {
             const resultsSection = document.getElementById('resultsSection');
             resultsSection.classList.add('show');
-            document.getElementById('resultsBody').innerHTML = '<tr><td colspan="6" class="loading"><div class="spinner"></div>正在查询...</td></tr>';
-            document.getElementById('pagination').innerHTML = '';
+            // 清空现有结果并显示加载状态
+            document.getElementById('rangeResultsContainer').innerHTML = '<div style="text-align: center; padding: 40px;"><div class="spinner"></div>正在查询...</div>';
+            document.getElementById('resultCount').textContent = '0';
             // 隐藏图表区域（加载时）
             document.getElementById('chartsSection').style.display = 'none';
             document.getElementById('lineChartContainer').style.display = 'none';
@@ -1696,7 +1726,7 @@
         }
 
         function hideLoading() {
-            // Loading 会在 displayResults 中被替换
+            // Loading 会在 displayRangeResults 中被替换
         }
 
         function hideResults() {
@@ -2102,6 +2132,271 @@
 
             // 隐藏结果区域
             hideResults();
+        }
+
+        // ===== 区间分组结果展示功能 =====
+
+        /**
+         * 按区间分组展示查询结果
+         * @param {string} queryType - 查询类型: 'birth-year', 'mileage', 'travel-time'
+         * @param {object} fullQuery - 完整的查询条件（包含所有区间）
+         */
+        async function displayRangeResults(queryType, fullQuery) {
+            hideLoading();
+
+            const resultsSection = document.getElementById('resultsSection');
+            const rangeResultsContainer = document.getElementById('rangeResultsContainer');
+            const resultCount = document.getElementById('resultCount');
+
+            // 显示结果区域
+            resultsSection.classList.add('show');
+
+            // 清空现有结果
+            rangeResultsContainer.innerHTML = '';
+            rangeGroupData = [];
+
+            // 获取区间列表
+            let ranges = [];
+            let rangeKey = '';
+
+            switch (queryType) {
+                case 'birth-year':
+                    ranges = fullQuery.ageRanges || [];
+                    rangeKey = 'ageRanges';
+                    break;
+                case 'mileage':
+                    ranges = fullQuery.mileageRanges || [];
+                    rangeKey = 'mileageRanges';
+                    break;
+                case 'travel-time':
+                    ranges = fullQuery.timeRanges || [];
+                    rangeKey = 'timeRanges';
+                    break;
+            }
+
+            if (!ranges || ranges.length === 0) {
+                rangeResultsContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">请设置查询区间</div>';
+                resultCount.textContent = '0';
+                return;
+            }
+
+            // 更新区间数量
+            resultCount.textContent = ranges.length;
+
+            // 为每个区间创建一个结果分组
+            for (let i = 0; i < ranges.length; i++) {
+                const range = ranges[i];
+                const rangeName = getRangeDisplayName(queryType, range, i + 1);
+
+                // 创建单区间查询条件
+                const singleRangeQuery = { ...fullQuery };
+                singleRangeQuery[rangeKey] = [range];
+                singleRangeQuery.current = 1;
+                singleRangeQuery.size = 20; // 每页20条数据
+
+                // 初始化分组数据
+                rangeGroupData.push({
+                    index: i,
+                    range: range,
+                    rangeName: rangeName,
+                    query: singleRangeQuery,
+                    data: null,
+                    total: 0,
+                    loading: true
+                });
+
+                // 创建分组HTML
+                const groupHtml = createRangeGroupHtml(i, rangeName);
+                rangeResultsContainer.insertAdjacentHTML('beforeend', groupHtml);
+
+                // 异步查询该区间的数据
+                queryRangeGroupData(queryType, singleRangeQuery, i);
+            }
+        }
+
+        /**
+         * 获取区间显示名称
+         */
+        function getRangeDisplayName(queryType, range, index) {
+            switch (queryType) {
+                case 'birth-year':
+                    return `区间${index} (${range.minAge}-${range.maxAge}岁)`;
+                case 'mileage':
+                    return `区间${index} (${range.minMileage || 0}-${range.maxMileage || '∞'}公里)`;
+                case 'travel-time':
+                    return `区间${index} (${range.minTravelTime || 0}-${range.maxTravelTime || '∞'}小时)`;
+                default:
+                    return `区间${index}`;
+            }
+        }
+
+        /**
+         * 创建区间分组HTML结构
+         */
+        function createRangeGroupHtml(index, rangeName) {
+            return `
+                <div class="range-result-group" data-group-index="${index}">
+                    <div class="range-result-header">
+                        <span class="range-result-title">${rangeName}</span>
+                        <span class="range-result-count" id="group-count-${index}">加载中...</span>
+                    </div>
+                    <div class="range-result-table-container">
+                        <table class="layui-table" lay-filter="groupTable${index}">
+                            <thead>
+                                <tr>
+                                    <th lay-data="{field:'personId', width:100}">人员ID</th>
+                                    <th lay-data="{field:'genderDesc', width:80}">性别</th>
+                                    <th lay-data="{field:'birthYear', width:100}">出生年份</th>
+                                    <th lay-data="{field:'age', width:80}">年龄</th>
+                                    <th lay-data="{field:'totalMileage', width:150}">总里程(公里)</th>
+                                    <th lay-data="{field:'totalTravelTime', width:120}">总时间(小时)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="group-body-${index}">
+                                <tr>
+                                    <td colspan="6" class="loading">
+                                        <div class="spinner"></div>
+                                        正在查询...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="group-pagination-${index}"></div>
+                </div>
+            `;
+        }
+
+        /**
+         * 查询单个区间的数据
+         */
+        async function queryRangeGroupData(queryType, query, groupIndex) {
+            try {
+                let endpoint = '';
+                switch (queryType) {
+                    case 'birth-year':
+                        endpoint = `${API_BASE}/query/birth-year/page`;
+                        break;
+                    case 'mileage':
+                        endpoint = `${API_BASE}/query/mileage/page`;
+                        break;
+                    case 'travel-time':
+                        endpoint = `${API_BASE}/query/travel-time/page`;
+                        break;
+                }
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(query)
+                });
+
+                const result = await response.json();
+
+                if (result.code === 200) {
+                    // 更新分组数据
+                    rangeGroupData[groupIndex].data = result.data;
+                    rangeGroupData[groupIndex].total = result.data.total || 0;
+                    rangeGroupData[groupIndex].loading = false;
+
+                    // 更新分组显示
+                    updateRangeGroupDisplay(groupIndex);
+                } else {
+                    rangeGroupData[groupIndex].loading = false;
+                    showRangeGroupError(groupIndex, result.message || '查询失败');
+                }
+            } catch (error) {
+                console.error(`区间${groupIndex}查询失败:`, error);
+                rangeGroupData[groupIndex].loading = false;
+                showRangeGroupError(groupIndex, '网络错误');
+            }
+        }
+
+        /**
+         * 更新区间分组显示
+         */
+        function updateRangeGroupDisplay(groupIndex) {
+            const groupData = rangeGroupData[groupIndex];
+            const countEl = document.getElementById(`group-count-${groupIndex}`);
+            const bodyEl = document.getElementById(`group-body-${groupIndex}`);
+            const paginationEl = document.getElementById(`group-pagination-${groupIndex}`);
+
+            // 更新人数统计
+            countEl.textContent = `${groupData.total}人`;
+
+            // 更新表格数据
+            if (groupData.data && groupData.data.records && groupData.data.records.length > 0) {
+                let tableHtml = '';
+                groupData.data.records.forEach(record => {
+                    tableHtml += `
+                        <tr>
+                            <td>${record.personId || '-'}</td>
+                            <td>${record.genderDesc || '-'}</td>
+                            <td>${record.birthYear || '-'}</td>
+                            <td>${record.age || '-'}</td>
+                            <td>${formatNumber(record.totalMileage)}</td>
+                            <td>${record.totalTravelTime || '-'}</td>
+                        </tr>
+                    `;
+                });
+                bodyEl.innerHTML = tableHtml;
+
+                // 渲染Layui分页
+                layui.use(['laypage'], function(){
+                    const laypage = layui.laypage;
+                    laypage.render({
+                        elem: `group-pagination-${groupIndex}`,
+                        count: groupData.total,
+                        limit: 20,
+                        curr: groupData.query.current,
+                        layout: ['count', 'prev', 'page', 'next', 'limit', 'skip'],
+                        limits: [10, 20, 30, 50],
+                        jump: (obj, first) => {
+                            if(!first){
+                                goToRangeGroupPage(groupIndex, obj.curr, obj.limit);
+                            }
+                        }
+                    });
+                });
+            } else {
+                bodyEl.innerHTML = '<tr><td colspan="6" class="layui-none">暂无数据</td></tr>';
+                paginationEl.innerHTML = '';
+            }
+        }
+
+        /**
+         * 显示区间分组错误
+         */
+        function showRangeGroupError(groupIndex, message) {
+            const countEl = document.getElementById(`group-count-${groupIndex}`);
+            const bodyEl = document.getElementById(`group-body-${groupIndex}`);
+            countEl.textContent = '查询失败';
+            bodyEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:#f00;">${message}</td></tr>`;
+        }
+
+        /**
+         * 区间分组分页跳转
+         */
+        async function goToRangeGroupPage(groupIndex, page, limit) {
+            const groupData = rangeGroupData[groupIndex];
+            const totalPages = Math.ceil(groupData.total / limit);
+
+            if (page < 1 || page > totalPages) {
+                return;
+            }
+
+            // 更新当前页
+            groupData.query.current = page;
+            groupData.query.size = limit;
+
+            // 显示加载状态
+            document.getElementById(`group-body-${groupIndex}`).innerHTML = `
+                <tr><td colspan="6" class="loading"><div class="spinner"></div>正在加载...</td></tr>
+            `;
+
+            // 重新查询
+            const queryType = activeTab;
+            await queryRangeGroupData(queryType, groupData.query, groupIndex);
         }
 
         // 时间格式化辅助函数
