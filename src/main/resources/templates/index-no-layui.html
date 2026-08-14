@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QStat - 数据查询系统</title>
-    <!-- Layui框架 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.6/dist/css/layui.css">
-    <script src="https://cdn.jsdelivr.net/npm/layui@2.9.6/dist/layui.js"></script>
     <!-- Echarts图表库 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <style>
@@ -297,6 +294,48 @@
             overflow-y: auto;
         }
 
+        /* 原生表格样式 */
+        .custom-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .custom-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .custom-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .custom-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .custom-table tbody tr {
+            transition: background 0.2s;
+        }
+
+        .custom-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .custom-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -373,31 +412,6 @@
             height: 300px;
         }
 
-        .chart-legend {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .legend-color {
-            width: 16px;
-            height: 16px;
-            border-radius: 4px;
-        }
-
-        .legend-text {
-            color: #666;
-            font-size: 14px;
-        }
-
         /* 区间分组结果样式 */
         .range-results-section {
             margin-top: 30px;
@@ -434,6 +448,111 @@
 
         .range-result-table-container {
             overflow-x: auto;
+        }
+
+        /* 原生分页样式 */
+        .custom-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            padding: 15px 0;
+        }
+
+        .custom-pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            transition: all 0.3s;
+        }
+
+        .custom-pagination button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .custom-pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .custom-pagination button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .custom-pagination .pagination-info {
+            font-size: 14px;
+            color: #666;
+            margin: 0 10px;
+        }
+
+        .custom-pagination select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .custom-pagination .page-input {
+            width: 50px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        /* 原生模态框样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            min-width: 400px;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
         }
     </style>
 </head>
@@ -621,6 +740,26 @@
         </div>
     </div>
 
+    <!-- 原生模态框 -->
+    <div class="modal-overlay" id="templateModal">
+        <div class="modal-content">
+            <div class="modal-header">选择要加载的配置</div>
+            <div class="modal-body">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px;">选择要加载的配置：</label>
+                    <select id="templateSelect" class="form-control" style="width: 100%;">
+                        <option value="">-- 请选择模板 --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeTemplateModal()" style="flex: 1;">取消</button>
+                <button type="button" class="btn btn-secondary" onclick="deleteSelectedTemplate()" style="flex: 1;">删除</button>
+                <button type="button" class="btn btn-primary" onclick="applySelectedTemplate()" style="flex: 1;">应用</button>
+            </div>
+        </div>
+    </div>
+
     <script th:inline="javascript">
         // API 基础路径
         const API_BASE = '/api';
@@ -651,8 +790,11 @@
         // 区间分组数据存储（每个区间独立的数据和分页状态）
         let rangeGroupData = [];
 
+        // 当前操作的查询类型（用于模板加载）
+        let currentTemplateQueryType = null;
+        let currentTemplates = [];
+
         // ===== 标签页切换功能 =====
-        // 标签页名称到表单ID的映射
         const tabIdMap = {
             'birth-year': 'birthYearForm',
             'mileage': 'mileageForm',
@@ -661,22 +803,17 @@
 
         document.querySelectorAll('.query-tab').forEach(tab => {
             tab.addEventListener('click', function() {
-                // 切换标签页样式
                 document.querySelectorAll('.query-tab').forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
 
-                // 切换表单显示
                 const tabName = this.dataset.tab;
                 document.querySelectorAll('.query-form').forEach(form => form.classList.remove('active'));
                 document.getElementById(tabIdMap[tabName]).classList.add('active');
 
-                // 隐藏结果区域
                 hideResults();
-                // 隐藏图表区域
                 document.getElementById('chartsSection').style.display = 'none';
                 document.getElementById('lineChartContainer').style.display = 'none';
 
-                // 更新当前标签
                 activeTab = tabName;
             });
         });
@@ -685,11 +822,9 @@
         const ageRangesContainer = document.getElementById('ageRangesContainer');
         const addRangeBtn = document.getElementById('addRangeBtn');
 
-        // 初始化：添加两个默认年龄段
         addAgeRange(10, 20);
         addAgeRange(18, 25);
 
-        // 添加年龄段
         addRangeBtn.addEventListener('click', () => {
             addAgeRange();
         });
@@ -711,17 +846,14 @@
             ageRangesContainer.insertAdjacentHTML('beforeend', rangeHtml);
         }
 
-        // 删除年龄段
         window.removeAgeRange = function(rangeId) {
             const rangeItem = document.querySelector(`[data-range-id="${rangeId}"]`);
             if (rangeItem) {
                 rangeItem.remove();
-                // 重新编号
                 updateRangeNumbers();
             }
         };
 
-        // 更新年龄段编号
         function updateRangeNumbers() {
             const ranges = ageRangesContainer.querySelectorAll('.age-range-item');
             ranges.forEach((range, index) => {
@@ -734,11 +866,9 @@
         const addMileageRangeBtn = document.getElementById('addMileageRangeBtn');
         let mileageRangeCounter = 0;
 
-        // 初始化：添加默认里程区间
         addMileageRange(0, 10000);
         addMileageRange(10000, 50000);
 
-        // 添加里程区间
         addMileageRangeBtn.addEventListener('click', () => {
             addMileageRange();
         });
@@ -760,7 +890,6 @@
             mileageRangesContainer.insertAdjacentHTML('beforeend', rangeHtml);
         }
 
-        // 删除里程区间
         window.removeMileageRange = function(rangeId) {
             const rangeItem = document.querySelector(`[data-mileage-range-id="${rangeId}"]`);
             if (rangeItem) {
@@ -769,7 +898,6 @@
             }
         };
 
-        // 更新里程区间编号
         function updateMileageRangeNumbers() {
             const ranges = mileageRangesContainer.querySelectorAll('.age-range-item');
             ranges.forEach((range, index) => {
@@ -782,11 +910,9 @@
         const addTimeRangeBtn = document.getElementById('addTimeRangeBtn');
         let timeRangeCounter = 0;
 
-        // 初始化：添加默认时间区间
         addTimeRange(0, 10);
         addTimeRange(10, 50);
 
-        // 添加时间区间
         addTimeRangeBtn.addEventListener('click', () => {
             addTimeRange();
         });
@@ -808,7 +934,6 @@
             timeRangesContainer.insertAdjacentHTML('beforeend', rangeHtml);
         }
 
-        // 删除时间区间
         window.removeTimeRange = function(rangeId) {
             const rangeItem = document.querySelector(`[data-time-range-id="${rangeId}"]`);
             if (rangeItem) {
@@ -817,7 +942,6 @@
             }
         };
 
-        // 更新时间区间编号
         function updateTimeRangeNumbers() {
             const ranges = timeRangesContainer.querySelectorAll('.age-range-item');
             ranges.forEach((range, index) => {
@@ -828,22 +952,18 @@
         // ===== 查询功能 =====
         document.getElementById('birthYearForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            // 收集查询条件
             const query = collectBirthYearQuery();
-            // 验证
             const validation = validateBirthYearQuery(query);
             if (!validation.valid) {
                 showError(validation.message);
                 return;
             }
             hideError();
-            // 执行查询
             currentQuery = query;
             currentPage = 1;
             await executeBirthYearQuery();
         });
 
-        // 收集出生年份查询条件
         function collectBirthYearQuery() {
             const ageRanges = [];
             const rangeItems = ageRangesContainer.querySelectorAll('.age-range-item');
@@ -871,7 +991,6 @@
             };
         }
 
-        // 验证查询条件
         function validateBirthYearQuery(query) {
             if (!query.ageRanges || query.ageRanges.length === 0) {
                 return { valid: false, message: '请至少设置一个年龄段' };
@@ -893,12 +1012,10 @@
             return { valid: true };
         }
 
-        // 执行出生年份查询
         async function executeBirthYearQuery() {
             showLoading();
 
             try {
-                // 同时查询数据和统计
                 const [dataResponse, statsResponse] = await Promise.all([
                     fetch(`${API_BASE}/query/birth-year/page`, {
                         method: 'POST',
@@ -916,7 +1033,6 @@
                 const statsResult = await statsResponse.json();
 
                 if (dataResult.code === 200 && statsResult.code === 200) {
-                    // 按区间分组展示结果
                     await displayRangeResults('birth-year', currentQuery);
                     displayCharts(statsResult.data);
                 } else {
@@ -931,26 +1047,18 @@
         // ===== 里程查询功能 =====
         document.getElementById('mileageForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-
-            // 收集查询条件
             const query = collectMileageQuery();
-
-            // 验证
             const validation = validateMileageQuery(query);
             if (!validation.valid) {
                 showMileageError(validation.message);
                 return;
             }
-
             hideMileageError();
-
-            // 执行查询
             currentMileageQuery = query;
             currentPage = 1;
             await executeMileageQuery();
         });
 
-        // 收集里程查询条件
         function collectMileageQuery() {
             const mileageRanges = [];
             const rangeItems = mileageRangesContainer.querySelectorAll('.age-range-item');
@@ -978,7 +1086,6 @@
             };
         }
 
-        // 验证里程查询条件
         function validateMileageQuery(query) {
             if (!query.mileageRanges || query.mileageRanges.length === 0) {
                 return { valid: false, message: '请至少设置一个里程区间' };
@@ -1000,12 +1107,10 @@
             return { valid: true };
         }
 
-        // 执行里程查询
         async function executeMileageQuery() {
             showLoading();
 
             try {
-                // 同时查询数据和统计
                 const [dataResponse, statsResponse] = await Promise.all([
                     fetch(`${API_BASE}/query/mileage/page`, {
                         method: 'POST',
@@ -1023,7 +1128,6 @@
                 const statsResult = await statsResponse.json();
 
                 if (dataResult.code === 200 && statsResult.code === 200) {
-                    // 按区间分组展示结果
                     await displayRangeResults('mileage', currentMileageQuery);
                     displayCharts(statsResult.data);
                 } else {
@@ -1038,26 +1142,18 @@
         // ===== 时间查询功能 =====
         document.getElementById('travelTimeForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-
-            // 收集查询条件
             const query = collectTimeQuery();
-
-            // 验证
             const validation = validateTimeQuery(query);
             if (!validation.valid) {
                 showTimeError(validation.message);
                 return;
             }
-
             hideTimeError();
-
-            // 执行查询
             currentTimeQuery = query;
             currentPage = 1;
             await executeTimeQuery();
         });
 
-        // 收集时间查询条件
         function collectTimeQuery() {
             const timeRanges = [];
             const rangeItems = timeRangesContainer.querySelectorAll('.age-range-item');
@@ -1085,13 +1181,11 @@
             };
         }
 
-        // 验证时间查询条件（检查区间是否重叠）
         function validateTimeQuery(query) {
             if (!query.timeRanges || query.timeRanges.length === 0) {
                 return { valid: false, message: '请至少设置一个时间区间' };
             }
 
-            // 检查每个区间是否有效
             for (let i = 0; i < query.timeRanges.length; i++) {
                 const range = query.timeRanges[i];
                 if (range.minTravelTime !== null && range.minTravelTime < 0) {
@@ -1116,7 +1210,6 @@
                     const r2Min = range2.minTravelTime !== null ? range2.minTravelTime : 0;
                     const r2Max = range2.maxTravelTime !== null ? range2.maxTravelTime : Number.MAX_SAFE_INTEGER;
 
-                    // 检查是否重叠
                     if (r1Min < r2Max && r2Min < r1Max) {
                         return { valid: false, message: `时间区间 ${i + 1} 与区间 ${j + 1} 存在重叠，时间区间不允许重叠` };
                     }
@@ -1126,12 +1219,10 @@
             return { valid: true };
         }
 
-        // 执行时间查询
         async function executeTimeQuery() {
             showLoading();
 
             try {
-                // 同时查询数据和统计
                 const [dataResponse, statsResponse] = await Promise.all([
                     fetch(`${API_BASE}/query/travel-time/page`, {
                         method: 'POST',
@@ -1149,7 +1240,6 @@
                 const statsResult = await statsResponse.json();
 
                 if (dataResult.code === 200 && statsResult.code === 200) {
-                    // 按区间分组展示结果
                     await displayRangeResults('travel-time', currentTimeQuery);
                     displayTimeCharts(statsResult.data);
                 } else {
@@ -1161,110 +1251,84 @@
             }
         }
 
-        // ===== 结果展示功能 =====
-        function displayResults(data) {
-            hideLoading();
+        // ===== 原生分页组件 =====
+        function renderPagination(containerId, totalCount, currentPage, pageSize, onPageChange) {
+            const container = document.getElementById(containerId);
+            const totalPages = Math.ceil(totalCount / pageSize);
 
-            const resultsSection = document.getElementById('resultsSection');
-            const resultsBody = document.getElementById('resultsBody');
-            const resultCount = document.getElementById('resultCount');
-
-            // 显示结果区域
-            resultsSection.classList.add('show');
-
-            // 更新记录数
-            totalCount = data.total;
-            totalPages = Math.ceil(totalCount / pageSize);
-            resultCount.textContent = totalCount;
-
-            // 清空并填充数据
-            resultsBody.innerHTML = '';
-
-            if (data.records && data.records.length > 0) {
-                data.records.forEach(record => {
-                    const row = `
-                        <tr>
-                            <td>${record.personId || '-'}</td>
-                            <td>${record.genderDesc || '-'}</td>
-                            <td>${record.birthYear || '-'}</td>
-                            <td>${record.age || '-'}</td>
-                            <td>${formatNumber(record.totalMileage)}</td>
-                            <td>${record.totalTravelTime || '-'}</td>
-                        </tr>
-                    `;
-                    resultsBody.insertAdjacentHTML('beforeend', row);
-                });
-
-                // 使用Layui分页
-                layui.use(['laypage'], function(){
-                    const laypage = layui.laypage;
-
-                    // 渲染Layui分页
-                    laypage.render({
-                        elem: 'pagination',
-                        count: totalCount,
-                        limit: pageSize,
-                        curr: currentPage,
-                        layout: ['count', 'prev', 'page', 'next', 'limit', 'skip'],
-                        limits: [10, 20, 30, 50],
-                        jump: function(obj, first){
-                            if(!first){
-                                currentPage = obj.curr;
-                                pageSize = obj.limit;
-                                // 根据当前标签页执行对应的查询
-                                if (activeTab === 'birth-year' && currentQuery) {
-                                    currentQuery.current = currentPage;
-                                    currentQuery.size = pageSize;
-                                    executeBirthYearQuery();
-                                } else if (activeTab === 'mileage' && currentMileageQuery) {
-                                    currentMileageQuery.current = currentPage;
-                                    currentMileageQuery.size = pageSize;
-                                    executeMileageQuery();
-                                } else if (activeTab === 'travel-time' && currentTimeQuery) {
-                                    currentTimeQuery.current = currentPage;
-                                    currentTimeQuery.size = pageSize;
-                                    executeTimeQuery();
-                                }
-                            }
-                        }
-                    });
-                });
-            } else {
-                resultsBody.innerHTML = '<tr><td colspan="6" class="layui-none">没有找到符合条件的数据</td></tr>';
-                // 清空分页
-                document.getElementById('pagination').innerHTML = '';
-            }
-        }
-
-        // 格式化数字
-        function formatNumber(num) {
-            if (num === null || num === undefined) return '-';
-            return num.toLocaleString();
-        }
-
-        // ===== 分页功能 =====
-        function updatePagination() {
-            // 分页功能已集成到displayResults中，使用Layui laypage组件
-        }
-
-        // 跳转到指定页
-        window.goToPage = async function(page) {
-            if (page < 1 || page > totalPages || page === currentPage) {
+            if (totalPages <= 1) {
+                container.innerHTML = '';
                 return;
             }
 
-            currentPage = page;
-            // 根据当前标签页执行对应的查询
-            if (activeTab === 'birth-year' && currentQuery) {
-                currentQuery.current = page;
-                await executeBirthYearQuery();
-            } else if (activeTab === 'mileage' && currentMileageQuery) {
-                currentMileageQuery.current = page;
-                await executeMileageQuery();
-            } else if (activeTab === 'travel-time' && currentTimeQuery) {
-                currentTimeQuery.current = page;
-                await executeTimeQuery();
+            let html = `
+                <div class="custom-pagination">
+                    <button onclick="handlePageChange(${containerId}, ${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>
+            `;
+
+            // 页码按钮
+            const maxButtons = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+            if (endPage - startPage < maxButtons - 1) {
+                startPage = Math.max(1, endPage - maxButtons + 1);
             }
+
+            if (startPage > 1) {
+                html += `<button onclick="handlePageChange('${containerId}', 1)">1</button>`;
+                if (startPage > 2) {
+                    html += `<span style="padding: 8px;">...</span>`;
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="${i === currentPage ? 'active' : ''}" onclick="handlePageChange('${containerId}', ${i})">${i}</button>`;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    html += `<span style="padding: 8px;">...</span>`;
+                }
+                html += `<button onclick="handlePageChange('${containerId}', ${totalPages})">${totalPages}</button>`;
+            }
+
+            html += `
+                    <button onclick="handlePageChange('${containerId}', ${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>
+                    <span class="pagination-info">共 ${totalCount} 条，第 ${currentPage}/${totalPages} 页</span>
+                    <select onchange="handlePageSizeChange('${containerId}', this.value)">
+                        <option value="10" ${pageSize === 10 ? 'selected' : ''}>10条/页</option>
+                        <option value="20" ${pageSize === 20 ? 'selected' : ''}>20条/页</option>
+                        <option value="30" ${pageSize === 30 ? 'selected' : ''}>30条/页</option>
+                        <option value="50" ${pageSize === 50 ? 'selected' : ''}>50条/页</option>
+                    </select>
+                    <input type="number" class="page-input" placeholder="跳转" min="1" max="${totalPages}"
+                           onkeypress="if(event.key==='Enter') handlePageJump('${containerId}', this.value, ${totalPages})">
+                    <button onclick="handlePageJump('${containerId}', this.previousElementSibling.value, ${totalPages})">跳转</button>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        window.handlePageChange = function(containerId, page) {
+            const groupIndex = containerId.split('-')[2]; // 提取group索引
+            goToRangeGroupPage(parseInt(groupIndex), page, null);
+        };
+
+        window.handlePageSizeChange = function(containerId, size) {
+            const groupIndex = containerId.split('-')[2];
+            const groupData = rangeGroupData[groupIndex];
+            goToRangeGroupPage(parseInt(groupIndex), 1, parseInt(size));
+        };
+
+        window.handlePageJump = function(containerId, page, maxPages) {
+            const pageNum = parseInt(page);
+            if (isNaN(pageNum) || pageNum < 1 || pageNum > maxPages) {
+                alert('请输入有效的页码');
+                return;
+            }
+            handlePageChange(containerId, pageNum);
         };
 
         // ===== 图表展示功能 =====
@@ -1272,25 +1336,20 @@
             const chartsSection = document.getElementById('chartsSection');
             chartsSection.style.display = 'block';
 
-            // 隐藏折线图容器
             document.getElementById('lineChartContainer').style.display = 'none';
 
-            // 根据查询类型显示不同的柱状图
             if (activeTab === 'mileage') {
                 renderDistributionBarChart(stats.mileageRangeStats, '里程区间分布（柱状图）');
-                // 隐藏年龄和时间饼图容器，显示里程饼图
                 document.getElementById('ageRangePieContainer').style.display = 'none';
                 document.getElementById('timeRangePieContainer').style.display = 'none';
                 document.getElementById('mileageRangePieContainer').style.display = 'flex';
                 renderMileageRangePieChart(stats.mileageRangeStats);
             } else if (activeTab === 'birth-year') {
                 renderDistributionBarChart(stats.ageRangeStats, '年龄区间分布（柱状图）');
-                // 显示并渲染年龄饼图
                 document.getElementById('ageRangePieContainer').style.display = 'flex';
                 renderAgeRangePieChart(stats.ageRangeStats);
             } else if (activeTab === 'travel-time') {
                 renderDistributionBarChart(stats.timeRangeStats, '时间区间分布（柱状图）');
-                // 隐藏年龄和里程饼图容器
                 document.getElementById('ageRangePieContainer').style.display = 'none';
                 document.getElementById('mileageRangePieContainer').style.display = 'none';
             }
@@ -1299,12 +1358,10 @@
         function renderAgeRangePieChart(ageRangeStats) {
             const chartDom = document.getElementById('ageRangePieChart');
 
-            // 销毁旧图表
             if (ageRangePieChart) {
                 ageRangePieChart.dispose();
             }
 
-            // 检查空数据
             if (!ageRangeStats || ageRangeStats.length === 0) {
                 chartDom.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无数据</div>';
                 return;
@@ -1313,13 +1370,8 @@
             const labels = ageRangeStats.map(s => s.rangeName || `${s.minAge}-${s.maxAge}岁`);
             const data = ageRangeStats.map(s => s.count);
 
-            // 使用多种颜色区分不同年龄段
-            const colors = [
-                '#667eea', '#f472b6', '#34d399', '#fb923c', '#8b5cf6',
-                '#06b6d4', '#f59e0b', '#ef4444', '#84cc16', '#6366f1'
-            ];
+            const colors = ['#667eea', '#f472b6', '#34d399', '#fb923c', '#8b5cf6', '#06b6d4', '#f59e0b', '#ef4444', '#84cc16', '#6366f1'];
 
-            // 初始化Echarts实例
             ageRangePieChart = echarts.init(chartDom);
 
             const option = {
@@ -1335,9 +1387,7 @@
                     left: 'center',
                     itemWidth: 12,
                     itemHeight: 12,
-                    textStyle: {
-                        fontSize: 14
-                    }
+                    textStyle: { fontSize: 14 }
                 },
                 series: [{
                     type: 'pie',
@@ -1349,33 +1399,21 @@
                         borderColor: '#fff',
                         borderWidth: 2
                     },
-                    label: {
-                        show: false,
-                        position: 'center'
-                    },
+                    label: { show: false, position: 'center' },
                     emphasis: {
-                        label: {
-                            show: true,
-                            fontSize: 18,
-                            fontWeight: 'bold'
-                        }
+                        label: { show: true, fontSize: 18, fontWeight: 'bold' }
                     },
-                    labelLine: {
-                        show: false
-                    },
+                    labelLine: { show: false },
                     data: labels.map((label, index) => ({
                         value: data[index],
                         name: label,
-                        itemStyle: {
-                            color: colors[index % colors.length]
-                        }
+                        itemStyle: { color: colors[index % colors.length] }
                     }))
                 }]
             };
 
             ageRangePieChart.setOption(option);
 
-            // 响应式调整
             window.addEventListener('resize', function() {
                 ageRangePieChart && ageRangePieChart.resize();
             });
@@ -1384,12 +1422,10 @@
         function renderMileageRangePieChart(mileageRangeStats) {
             const chartDom = document.getElementById('mileageRangePieChart');
 
-            // 销毁旧图表
             if (mileageRangePieChart) {
                 mileageRangePieChart.dispose();
             }
 
-            // 检查空数据
             if (!mileageRangeStats || mileageRangeStats.length === 0) {
                 chartDom.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无数据</div>';
                 return;
@@ -1398,13 +1434,8 @@
             const labels = mileageRangeStats.map(s => s.rangeName || `${s.minMileage}-${s.maxMileage}公里`);
             const data = mileageRangeStats.map(s => s.count);
 
-            // 使用多种颜色区分不同里程区间
-            const colors = [
-                '#667eea', '#f472b6', '#34d399', '#fb923c', '#8b5cf6',
-                '#06b6d4', '#f59e0b', '#ef4444', '#84cc16', '#6366f1'
-            ];
+            const colors = ['#667eea', '#f472b6', '#34d399', '#fb923c', '#8b5cf6', '#06b6d4', '#f59e0b', '#ef4444', '#84cc16', '#6366f1'];
 
-            // 初始化Echarts实例
             mileageRangePieChart = echarts.init(chartDom);
 
             const option = {
@@ -1420,9 +1451,7 @@
                     left: 'center',
                     itemWidth: 12,
                     itemHeight: 12,
-                    textStyle: {
-                        fontSize: 14
-                    }
+                    textStyle: { fontSize: 14 }
                 },
                 series: [{
                     type: 'pie',
@@ -1434,33 +1463,21 @@
                         borderColor: '#fff',
                         borderWidth: 2
                     },
-                    label: {
-                        show: false,
-                        position: 'center'
-                    },
+                    label: { show: false, position: 'center' },
                     emphasis: {
-                        label: {
-                            show: true,
-                            fontSize: 18,
-                            fontWeight: 'bold'
-                        }
+                        label: { show: true, fontSize: 18, fontWeight: 'bold' }
                     },
-                    labelLine: {
-                        show: false
-                    },
+                    labelLine: { show: false },
                     data: labels.map((label, index) => ({
                         value: data[index],
                         name: label,
-                        itemStyle: {
-                            color: colors[index % colors.length]
-                        }
+                        itemStyle: { color: colors[index % colors.length] }
                     }))
                 }]
             };
 
             mileageRangePieChart.setOption(option);
 
-            // 响应式调整
             window.addEventListener('resize', function() {
                 mileageRangePieChart && mileageRangePieChart.resize();
             });
@@ -1469,15 +1486,12 @@
         function renderDistributionBarChart(stats, title) {
             const chartDom = document.getElementById('distributionBarChart');
 
-            // 销毁旧图表
             if (distributionBarChart) {
                 distributionBarChart.dispose();
             }
 
-            // 更新标题
             document.getElementById('distributionChartTitle').textContent = title;
 
-            // 检查空数据
             if (!stats || stats.length === 0) {
                 chartDom.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无数据</div>';
                 return;
@@ -1486,7 +1500,6 @@
             const labels = stats.map(s => s.rangeName);
             const data = stats.map(s => s.count);
 
-            // 初始化Echarts实例
             distributionBarChart = echarts.init(chartDom);
 
             const colors = ['#667eea', '#f472b6', '#34d399', '#fb923c', '#8b5cf6'];
@@ -1494,9 +1507,7 @@
             const option = {
                 tooltip: {
                     trigger: 'axis',
-                    axisPointer: {
-                        type: 'shadow'
-                    },
+                    axisPointer: { type: 'shadow' },
                     formatter: function(params) {
                         const item = params[0];
                         const total = data.reduce((a, b) => a + b, 0);
@@ -1513,21 +1524,13 @@
                 xAxis: {
                     type: 'category',
                     data: labels,
-                    axisLabel: {
-                        interval: 0,
-                        rotate: 45,
-                        fontSize: 12
-                    },
-                    axisTick: {
-                        alignWithLabel: true
-                    }
+                    axisLabel: { interval: 0, rotate: 45, fontSize: 12 },
+                    axisTick: { alignWithLabel: true }
                 },
                 yAxis: {
                     type: 'value',
                     name: '人数',
-                    axisLabel: {
-                        formatter: '{value}'
-                    },
+                    axisLabel: { formatter: '{value}' },
                     minInterval: 1
                 },
                 series: [{
@@ -1541,69 +1544,52 @@
                             borderRadius: [4, 4, 0, 0]
                         }
                     })),
-                    label: {
-                        show: true,
-                        position: 'top',
-                        formatter: '{c}'
-                    }
+                    label: { show: true, position: 'top', formatter: '{c}' }
                 }]
             };
 
             distributionBarChart.setOption(option);
 
-            // 响应式调整
             window.addEventListener('resize', function() {
                 distributionBarChart && distributionBarChart.resize();
             });
         }
 
-        // ===== 时间图表展示功能 =====
         function displayTimeCharts(stats) {
             const chartsSection = document.getElementById('chartsSection');
             chartsSection.style.display = 'block';
 
-            // 显示折线图容器
             document.getElementById('lineChartContainer').style.display = 'flex';
 
-            // 隐藏年龄、里程和时间饼图容器
             document.getElementById('ageRangePieContainer').style.display = 'none';
             document.getElementById('mileageRangePieContainer').style.display = 'none';
             document.getElementById('timeRangePieContainer').style.display = 'none';
 
-            // 时间区间柱状图
             renderDistributionBarChart(stats.timeRangeStats, '时间区间分布（柱状图）');
-
-            // 飞行时间折线图（时间区间人数分布）
             renderTimeLineChart(stats.timeRangeStats);
         }
 
         function renderTimeLineChart(timeRangeStats) {
             const chartDom = document.getElementById('timeLineChart');
 
-            // 销毁旧图表
             if (timeLineChart) {
                 timeLineChart.dispose();
             }
 
-            // 检查空数据
             if (!timeRangeStats || timeRangeStats.length === 0) {
                 chartDom.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无数据</div>';
                 return;
             }
 
-            // 按时间区间排序（按最小时间排序）
             const sortedData = [...timeRangeStats].sort((a, b) => {
                 const minA = a.minTravelTime !== null ? a.minTravelTime : 0;
                 const minB = b.minTravelTime !== null ? b.minTravelTime : 0;
                 return minA - minB;
             });
 
-            // 横坐标：时间区间标签
             const labels = sortedData.map(s => s.rangeName || `${s.minTravelTime}-${s.maxTravelTime}小时`);
-            // 纵坐标：人数
             const countData = sortedData.map(s => s.count);
 
-            // 初始化Echarts实例
             timeLineChart = echarts.init(chartDom);
 
             const option = {
@@ -1626,50 +1612,31 @@
                     name: '时间区间（小时）',
                     nameLocation: 'middle',
                     nameGap: 30,
-                    axisLabel: {
-                        interval: 0,
-                        rotate: 45,
-                        fontSize: 12
-                    },
+                    axisLabel: { interval: 0, rotate: 45, fontSize: 12 },
                     boundaryGap: false
                 },
                 yAxis: {
                     type: 'value',
                     name: '人数',
                     nameLocation: 'end',
-                    axisLabel: {
-                        formatter: '{value}人'
-                    },
+                    axisLabel: { formatter: '{value}人' },
                     minInterval: 1,
-                    splitLine: {
-                        lineStyle: {
-                            type: 'dashed'
-                        }
-                    }
+                    splitLine: { lineStyle: { type: 'dashed' } }
                 },
                 series: [{
                     name: '人数',
                     type: 'line',
                     smooth: true,
                     data: countData,
-                    lineStyle: {
-                        color: '#667eea',
-                        width: 3
-                    },
+                    lineStyle: { color: '#667eea', width: 3 },
                     areaStyle: {
                         color: {
                             type: 'linear',
-                            x: 0,
-                            y: 0,
-                            x2: 0,
-                            y2: 1,
-                            colorStops: [{
-                                offset: 0,
-                                color: 'rgba(102, 126, 234, 0.3)'
-                            }, {
-                                offset: 1,
-                                color: 'rgba(102, 126, 234, 0.05)'
-                            }]
+                            x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [
+                                { offset: 0, color: 'rgba(102, 126, 234, 0.3)' },
+                                { offset: 1, color: 'rgba(102, 126, 234, 0.05)' }
+                            ]
                         }
                     },
                     itemStyle: {
@@ -1681,8 +1648,6 @@
                     emphasis: {
                         itemStyle: {
                             color: '#667eea',
-                            borderColor: '#fff',
-                            borderWidth: 2,
                             shadowBlur: 10,
                             shadowColor: 'rgba(102, 126, 234, 0.5)'
                         }
@@ -1700,7 +1665,6 @@
 
             timeLineChart.setOption(option);
 
-            // 响应式调整
             window.addEventListener('resize', function() {
                 timeLineChart && timeLineChart.resize();
             });
@@ -1710,10 +1674,8 @@
         function showLoading() {
             const resultsSection = document.getElementById('resultsSection');
             resultsSection.classList.add('show');
-            // 清空现有结果并显示加载状态
             document.getElementById('rangeResultsContainer').innerHTML = '<div style="text-align: center; padding: 40px;"><div class="spinner"></div>正在查询...</div>';
             document.getElementById('resultCount').textContent = '0';
-            // 隐藏图表区域（加载时）
             document.getElementById('chartsSection').style.display = 'none';
             document.getElementById('lineChartContainer').style.display = 'none';
             document.getElementById('ageRangePieContainer').style.display = 'none';
@@ -1721,9 +1683,7 @@
             document.getElementById('timeRangePieContainer').style.display = 'none';
         }
 
-        function hideLoading() {
-            // Loading 会在 displayRangeResults 中被替换
-        }
+        function hideLoading() {}
 
         function hideResults() {
             document.getElementById('resultsSection').classList.remove('show');
@@ -1769,21 +1729,18 @@
             form.addEventListener('reset', function() {
                 setTimeout(() => {
                     if (this.id === 'birthYearForm') {
-                        // 重置年龄段为默认状态
                         ageRangesContainer.innerHTML = '';
                         ageRangeCounter = 0;
                         addAgeRange(10, 20);
                         addAgeRange(18, 25);
                     }
                     if (this.id === 'mileageForm') {
-                        // 重置里程区间为默认状态
                         mileageRangesContainer.innerHTML = '';
                         mileageRangeCounter = 0;
                         addMileageRange(0, 10000);
                         addMileageRange(10000, 50000);
                     }
                     if (this.id === 'travelTimeForm') {
-                        // 重置时间区间为默认状态
                         timeRangesContainer.innerHTML = '';
                         timeRangeCounter = 0;
                         addTimeRange(0, 10);
@@ -1797,16 +1754,8 @@
             });
         });
 
-        console.log('QStat 查询系统已加载完成！');
-
-        // ===== 查询区间保存/加载功能 =====
-
-        // 当前正在保存的配置类型
-        let currentSaveConfigType = null;
-
-        // ===== 出生年份配置保存功能 =====
+        // ===== 模板保存/加载功能 =====
         document.getElementById('saveBirthYearTemplate').addEventListener('click', async function() {
-            currentSaveConfigType = 'birth-year';
             const templateName = prompt('请输入模板名称：');
             if (!templateName || !templateName.trim()) {
                 alert('请输入模板名称');
@@ -1838,7 +1787,6 @@
             }
         });
 
-        // 加载出生年份模板
         document.getElementById('loadBirthYearTemplate').addEventListener('click', async function() {
             try {
                 const response = await fetch(`${API_BASE}/query-template/list/birth-year`);
@@ -1849,16 +1797,13 @@
                     return;
                 }
 
-                // 显示模板选择列表（使用 Layui 弹窗）
-                showTemplateSelectionDialog(result.data, 'birth-year');
+                showTemplateModal(result.data, 'birth-year');
             } catch (error) {
                 alert('加载失败：' + error.message);
             }
         });
 
-        // ===== 里程配置保存功能 =====
         document.getElementById('saveMileageTemplate').addEventListener('click', async function() {
-            currentSaveConfigType = 'mileage';
             const templateName = prompt('请输入模板名称：');
             if (!templateName || !templateName.trim()) {
                 alert('请输入模板名称');
@@ -1890,7 +1835,6 @@
             }
         });
 
-        // 加载里程模板
         document.getElementById('loadMileageTemplate').addEventListener('click', async function() {
             try {
                 const response = await fetch(`${API_BASE}/query-template/list/mileage`);
@@ -1901,15 +1845,13 @@
                     return;
                 }
 
-                showTemplateSelectionDialog(result.data, 'mileage');
+                showTemplateModal(result.data, 'mileage');
             } catch (error) {
                 alert('加载失败：' + error.message);
             }
         });
 
-        // ===== 时间配置保存功能 =====
         document.getElementById('saveTravelTimeTemplate').addEventListener('click', async function() {
-            currentSaveConfigType = 'travel-time';
             const templateName = prompt('请输入模板名称：');
             if (!templateName || !templateName.trim()) {
                 alert('请输入模板名称');
@@ -1941,7 +1883,6 @@
             }
         });
 
-        // 加载时间模板
         document.getElementById('loadTravelTimeTemplate').addEventListener('click', async function() {
             try {
                 const response = await fetch(`${API_BASE}/query-template/list/travel-time`);
@@ -1952,52 +1893,35 @@
                     return;
                 }
 
-                showTemplateSelectionDialog(result.data, 'travel-time');
+                showTemplateModal(result.data, 'travel-time');
             } catch (error) {
                 alert('加载失败：' + error.message);
             }
         });
 
-        // 显示模板选择对话框
-        function showTemplateSelectionDialog(templates, queryType) {
-            const options = templates.map(t =>
-                `<option value="${t.id}">${t.templateName} (${formatTime(t.createTime)})</option>`
-            ).join('');
+        // 显示原生模态框
+        function showTemplateModal(templates, queryType) {
+            currentTemplates = templates;
+            currentTemplateQueryType = queryType;
 
-            const html = `
-                <div style="padding: 20px;">
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px;">选择要加载的配置：</label>
-                        <select id="templateSelect" class="form-control" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                            <option value="">-- 请选择模板 --</option>
-                            ${options}
-                        </select>
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <button type="button" class="btn btn-primary" onclick="applySelectedTemplate('${queryType}')" style="flex: 1;">应用</button>
-                        <button type="button" class="btn btn-secondary" onclick="deleteSelectedTemplate('${queryType}')" style="flex: 1;">删除</button>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button type="button" class="btn btn-secondary" onclick="closeTemplateDialog()" style="flex: 1;">取消</button>
-                    </div>
-                </div>
-            `;
+            const select = document.getElementById('templateSelect');
+            select.innerHTML = '<option value="">-- 请选择模板 --</option>';
 
-            layui.layer.open({
-                type: 1,
-                title: '选择要加载的配置',
-                content: html,
-                area: ['400px', '280px']
+            templates.forEach(t => {
+                const option = document.createElement('option');
+                option.value = t.id;
+                option.textContent = `${t.templateName} (${formatTime(t.createTime)})`;
+                select.appendChild(option);
             });
+
+            document.getElementById('templateModal').classList.add('show');
         }
 
-        // 关闭模板选择对话框
-        window.closeTemplateDialog = function() {
-            layui.layer.closeAll();
+        window.closeTemplateModal = function() {
+            document.getElementById('templateModal').classList.remove('show');
         };
 
-        // 应用选中的模板
-        window.applySelectedTemplate = async function(queryType) {
+        window.applySelectedTemplate = async function() {
             const select = document.getElementById('templateSelect');
             const templateId = select.value;
 
@@ -2011,9 +1935,9 @@
                 const result = await response.json();
 
                 if (result.code === 200 && result.data) {
-                    loadTemplateToForm(result.data, queryType);
-                    layui.layer.closeAll();
-                    layui.layer.msg('配置加载成功！', {icon: 1});
+                    loadTemplateToForm(result.data, currentTemplateQueryType);
+                    closeTemplateModal();
+                    alert('配置加载成功！');
                 } else {
                     alert('加载模板详情失败');
                 }
@@ -2022,8 +1946,7 @@
             }
         };
 
-        // 删除选中的模板
-        window.deleteSelectedTemplate = async function(queryType) {
+        window.deleteSelectedTemplate = async function() {
             const select = document.getElementById('templateSelect');
             const templateId = select.value;
             const templateName = select.options[select.selectedIndex]?.text || '';
@@ -2033,7 +1956,6 @@
                 return;
             }
 
-            // 确认删除
             if (!confirm(`确定要删除配置「${templateName}」吗？`)) {
                 return;
             }
@@ -2045,18 +1967,18 @@
                 const result = await response.json();
 
                 if (result.code === 200) {
-                    layui.layer.closeAll();
-                    layui.layer.msg('删除成功！', {icon: 1});
-                    // 刷新模板列表
+                    closeTemplateModal();
+                    alert('删除成功！');
+                    // 重新加载模板列表
                     setTimeout(() => {
-                        if (queryType === 'birth-year') {
+                        if (currentTemplateQueryType === 'birth-year') {
                             document.getElementById('loadBirthYearTemplate').click();
-                        } else if (queryType === 'mileage') {
+                        } else if (currentTemplateQueryType === 'mileage') {
                             document.getElementById('loadMileageTemplate').click();
-                        } else if (queryType === 'travel-time') {
+                        } else if (currentTemplateQueryType === 'travel-time') {
                             document.getElementById('loadTravelTimeTemplate').click();
                         }
-                    }, 500);
+                    }, 100);
                 } else {
                     alert(result.message || '删除失败');
                 }
@@ -2065,60 +1987,50 @@
             }
         };
 
-        // 将模板加载到表单
         function loadTemplateToForm(template, queryType) {
             const ranges = JSON.parse(template.rangesJson);
             const gender = template.gender;
 
             if (queryType === 'birth-year') {
-                // 清空现有年龄段
                 ageRangesContainer.innerHTML = '';
                 ageRangeCounter = 0;
 
-                // 添加保存的年龄段
                 if (ranges && ranges.length > 0) {
                     ranges.forEach(range => {
                         addAgeRange(range.minAge, range.maxAge);
                     });
                 }
 
-                // 设置性别
                 const genderRadios = document.querySelectorAll('#birthYearForm input[name="gender"]');
                 genderRadios.forEach(radio => {
                     radio.checked = (radio.value === '' && gender === null) ||
                                    (radio.value === String(gender));
                 });
             } else if (queryType === 'mileage') {
-                // 清空现有里程区间
                 mileageRangesContainer.innerHTML = '';
                 mileageRangeCounter = 0;
 
-                // 添加保存的里程区间
                 if (ranges && ranges.length > 0) {
                     ranges.forEach(range => {
                         addMileageRange(range.minMileage, range.maxMileage);
                     });
                 }
 
-                // 设置性别
                 const genderRadios = document.querySelectorAll('#mileageForm input[name="gender"]');
                 genderRadios.forEach(radio => {
                     radio.checked = (radio.value === '' && gender === null) ||
                                    (radio.value === String(gender));
                 });
             } else if (queryType === 'travel-time') {
-                // 清空现有时间区间
                 timeRangesContainer.innerHTML = '';
                 timeRangeCounter = 0;
 
-                // 添加保存的时间区间
                 if (ranges && ranges.length > 0) {
                     ranges.forEach(range => {
                         addTimeRange(range.minTravelTime, range.maxTravelTime);
                     });
                 }
 
-                // 设置性别
                 const genderRadios = document.querySelectorAll('#travelTimeForm input[name="gender"]');
                 genderRadios.forEach(radio => {
                     radio.checked = (radio.value === '' && gender === null) ||
@@ -2126,17 +2038,10 @@
                 });
             }
 
-            // 隐藏结果区域
             hideResults();
         }
 
         // ===== 区间分组结果展示功能 =====
-
-        /**
-         * 按区间分组展示查询结果
-         * @param {string} queryType - 查询类型: 'birth-year', 'mileage', 'travel-time'
-         * @param {object} fullQuery - 完整的查询条件（包含所有区间）
-         */
         async function displayRangeResults(queryType, fullQuery) {
             hideLoading();
 
@@ -2144,14 +2049,11 @@
             const rangeResultsContainer = document.getElementById('rangeResultsContainer');
             const resultCount = document.getElementById('resultCount');
 
-            // 显示结果区域
             resultsSection.classList.add('show');
 
-            // 清空现有结果
             rangeResultsContainer.innerHTML = '';
             rangeGroupData = [];
 
-            // 获取区间列表
             let ranges = [];
             let rangeKey = '';
 
@@ -2176,21 +2078,17 @@
                 return;
             }
 
-            // 更新区间数量
             resultCount.textContent = ranges.length;
 
-            // 为每个区间创建一个结果分组
             for (let i = 0; i < ranges.length; i++) {
                 const range = ranges[i];
                 const rangeName = getRangeDisplayName(queryType, range, i + 1);
 
-                // 创建单区间查询条件
                 const singleRangeQuery = { ...fullQuery };
                 singleRangeQuery[rangeKey] = [range];
                 singleRangeQuery.current = 1;
-                singleRangeQuery.size = 20; // 每页20条数据
+                singleRangeQuery.size = 20;
 
-                // 初始化分组数据
                 rangeGroupData.push({
                     index: i,
                     range: range,
@@ -2201,18 +2099,13 @@
                     loading: true
                 });
 
-                // 创建分组HTML
                 const groupHtml = createRangeGroupHtml(i, rangeName);
                 rangeResultsContainer.insertAdjacentHTML('beforeend', groupHtml);
 
-                // 异步查询该区间的数据
                 queryRangeGroupData(queryType, singleRangeQuery, i);
             }
         }
 
-        /**
-         * 获取区间显示名称
-         */
         function getRangeDisplayName(queryType, range, index) {
             switch (queryType) {
                 case 'birth-year':
@@ -2226,9 +2119,6 @@
             }
         }
 
-        /**
-         * 创建区间分组HTML结构
-         */
         function createRangeGroupHtml(index, rangeName) {
             return `
                 <div class="range-result-group" data-group-index="${index}">
@@ -2237,15 +2127,15 @@
                         <span class="range-result-count" id="group-count-${index}">加载中...</span>
                     </div>
                     <div class="range-result-table-container">
-                        <table class="layui-table" lay-filter="groupTable${index}">
+                        <table class="custom-table">
                             <thead>
                                 <tr>
-                                    <th lay-data="{field:'personId', width:100}">人员ID</th>
-                                    <th lay-data="{field:'genderDesc', width:80}">性别</th>
-                                    <th lay-data="{field:'birthYear', width:100}">出生年份</th>
-                                    <th lay-data="{field:'age', width:80}">年龄</th>
-                                    <th lay-data="{field:'totalMileage', width:150}">总里程(公里)</th>
-                                    <th lay-data="{field:'totalTravelTime', width:120}">总时间(小时)</th>
+                                    <th>人员ID</th>
+                                    <th>性别</th>
+                                    <th>出生年份</th>
+                                    <th>年龄</th>
+                                    <th>总里程(公里)</th>
+                                    <th>总时间(小时)</th>
                                 </tr>
                             </thead>
                             <tbody id="group-body-${index}">
@@ -2263,9 +2153,6 @@
             `;
         }
 
-        /**
-         * 查询单个区间的数据
-         */
         async function queryRangeGroupData(queryType, query, groupIndex) {
             try {
                 let endpoint = '';
@@ -2290,12 +2177,10 @@
                 const result = await response.json();
 
                 if (result.code === 200) {
-                    // 更新分组数据
                     rangeGroupData[groupIndex].data = result.data;
                     rangeGroupData[groupIndex].total = result.data.total || 0;
                     rangeGroupData[groupIndex].loading = false;
 
-                    // 更新分组显示
                     updateRangeGroupDisplay(groupIndex);
                 } else {
                     rangeGroupData[groupIndex].loading = false;
@@ -2308,19 +2193,14 @@
             }
         }
 
-        /**
-         * 更新区间分组显示
-         */
         function updateRangeGroupDisplay(groupIndex) {
             const groupData = rangeGroupData[groupIndex];
             const countEl = document.getElementById(`group-count-${groupIndex}`);
             const bodyEl = document.getElementById(`group-body-${groupIndex}`);
             const paginationEl = document.getElementById(`group-pagination-${groupIndex}`);
 
-            // 更新人数统计
             countEl.textContent = `${groupData.total}人`;
 
-            // 更新表格数据
             if (groupData.data && groupData.data.records && groupData.data.records.length > 0) {
                 let tableHtml = '';
                 groupData.data.records.forEach(record => {
@@ -2337,32 +2217,20 @@
                 });
                 bodyEl.innerHTML = tableHtml;
 
-                // 渲染Layui分页
-                layui.use(['laypage'], function(){
-                    const laypage = layui.laypage;
-                    laypage.render({
-                        elem: `group-pagination-${groupIndex}`,
-                        count: groupData.total,
-                        limit: 20,
-                        curr: groupData.query.current,
-                        layout: ['count', 'prev', 'page', 'next', 'limit', 'skip'],
-                        limits: [10, 20, 30, 50],
-                        jump: (obj, first) => {
-                            if(!first){
-                                goToRangeGroupPage(groupIndex, obj.curr, obj.limit);
-                            }
-                        }
-                    });
-                });
+                // 使用原生分页
+                renderPagination(
+                    `group-pagination-${groupIndex}`,
+                    groupData.total,
+                    groupData.query.current,
+                    20,
+                    null
+                );
             } else {
-                bodyEl.innerHTML = '<tr><td colspan="6" class="layui-none">暂无数据</td></tr>';
+                bodyEl.innerHTML = '<tr><td colspan="6" class="no-results">暂无数据</td></tr>';
                 paginationEl.innerHTML = '';
             }
         }
 
-        /**
-         * 显示区间分组错误
-         */
         function showRangeGroupError(groupIndex, message) {
             const countEl = document.getElementById(`group-count-${groupIndex}`);
             const bodyEl = document.getElementById(`group-body-${groupIndex}`);
@@ -2370,37 +2238,38 @@
             bodyEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:#f00;">${message}</td></tr>`;
         }
 
-        /**
-         * 区间分组分页跳转
-         */
         async function goToRangeGroupPage(groupIndex, page, limit) {
             const groupData = rangeGroupData[groupIndex];
-            const totalPages = Math.ceil(groupData.total / limit);
+            const newPageSize = limit || 20;
+            const totalPages = Math.ceil(groupData.total / newPageSize);
 
             if (page < 1 || page > totalPages) {
                 return;
             }
 
-            // 更新当前页
             groupData.query.current = page;
-            groupData.query.size = limit;
+            groupData.query.size = newPageSize;
 
-            // 显示加载状态
             document.getElementById(`group-body-${groupIndex}`).innerHTML = `
                 <tr><td colspan="6" class="loading"><div class="spinner"></div>正在加载...</td></tr>
             `;
 
-            // 重新查询
             const queryType = activeTab;
             await queryRangeGroupData(queryType, groupData.query, groupIndex);
         }
 
-        // 时间格式化辅助函数
+        function formatNumber(num) {
+            if (num === null || num === undefined) return '-';
+            return num.toLocaleString();
+        }
+
         function formatTime(timestamp) {
             if (!timestamp) return '';
             const date = new Date(timestamp);
             return date.toLocaleString('zh-CN');
         }
+
+        console.log('QStat 查询系统已加载完成！');
     </script>
 </body>
 </html>
